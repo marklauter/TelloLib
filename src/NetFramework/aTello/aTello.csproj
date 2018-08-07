@@ -56,22 +56,22 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Plugin.FilePicker, Version=1.4.34.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.Plugin.FilePicker.1.4.34-beta\lib\MonoAndroid10\Plugin.FilePicker.dll</HintPath>
+      <HintPath>..\..\..\packages\Xamarin.Plugin.FilePicker.1.4.34-beta\lib\MonoAndroid10\Plugin.FilePicker.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.FilePicker.Abstractions, Version=1.4.34.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xamarin.Plugin.FilePicker.1.4.34-beta\lib\MonoAndroid10\Plugin.FilePicker.Abstractions.dll</HintPath>
+      <HintPath>..\..\..\packages\Xamarin.Plugin.FilePicker.1.4.34-beta\lib\MonoAndroid10\Plugin.FilePicker.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.SimpleAudioPlayer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugin.SimpleAudioPlayer.1.2.1.1-beta\lib\MonoAndroid10\Plugin.SimpleAudioPlayer.dll</HintPath>
+      <HintPath>..\..\..\packages\Xam.Plugin.SimpleAudioPlayer.1.2.1.1-beta\lib\MonoAndroid10\Plugin.SimpleAudioPlayer.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.SimpleAudioPlayer.Abstractions, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugin.SimpleAudioPlayer.1.2.1.1-beta\lib\MonoAndroid10\Plugin.SimpleAudioPlayer.Abstractions.dll</HintPath>
+      <HintPath>..\..\..\packages\Xam.Plugin.SimpleAudioPlayer.1.2.1.1-beta\lib\MonoAndroid10\Plugin.SimpleAudioPlayer.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.TextToSpeech, Version=3.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugins.TextToSpeech.3.3.2\lib\MonoAndroid10\Plugin.TextToSpeech.dll</HintPath>
+      <HintPath>..\..\..\packages\Xam.Plugins.TextToSpeech.3.3.2\lib\MonoAndroid10\Plugin.TextToSpeech.dll</HintPath>
     </Reference>
     <Reference Include="Plugin.TextToSpeech.Abstractions, Version=3.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Xam.Plugins.TextToSpeech.3.3.2\lib\MonoAndroid10\Plugin.TextToSpeech.Abstractions.dll</HintPath>
+      <HintPath>..\..\..\packages\Xam.Plugins.TextToSpeech.3.3.2\lib\MonoAndroid10\Plugin.TextToSpeech.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Xml" />

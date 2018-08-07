@@ -5,10 +5,10 @@ using Tello.Core;
 namespace Test.Tello.Core
 {
     [TestClass]
-    public class CrcExtenstions_Test
+    public class DatagramExtenstions_Test
     {
         [TestMethod]
-        public void FCS16_NewVsOld()
+        public void FCS16()
         {
             var helloWorld = Encoding.ASCII.GetBytes("Hello, world!");
             var bytes = new byte[helloWorld.Length + 2];
@@ -19,7 +19,7 @@ namespace Test.Tello.Core
         }
 
         [TestMethod]
-        public void UCrc_NewVsOld()
+        public void UCRC()
         {
             var helloWorld = Encoding.ASCII.GetBytes("Hello, world!");
             var bytes = new byte[helloWorld.Length + 2];

@@ -6,6 +6,22 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.csproj.bak
+*.nuspec.txt
+
+# private stuff
+*.keys
+*.private
+*.passwords
+*.secret
+*.secrets
+*.connectionstrings
+
+# scripts
+*.ps1
+
+# db project
+*.jfm
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -143,7 +159,7 @@ publish/
 *.azurePubxml
 # TODO: Comment the next line if you want to checkin your web deploy settings
 # but database connection strings (with potential passwords) will be unencrypted
-#*.pubxml
+*.pubxml
 *.publishproj
 
 # Microsoft Azure Web App publish settings. Comment the next line if you want to
@@ -261,3 +277,4 @@ __pycache__/
 *.pyc
 /Xamarin.FormsJoystick-master
 /temp
+

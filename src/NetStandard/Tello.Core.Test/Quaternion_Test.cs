@@ -155,9 +155,6 @@ namespace Test.Tello.Core
             Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
             Assert.AreEqual(-90.0, Math.Round(eulerAngle.Roll, 0));
         }
-
-
-
     }
 }
 

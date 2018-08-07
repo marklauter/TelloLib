@@ -3,19 +3,25 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aTello", "aTello\aTello.csproj", "{939A0652-8FE0-45B2-9342-535B63B23B94}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "aTello", "src\aTello\aTello.csproj", "{939A0652-8FE0-45B2-9342-535B63B23B94}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloLib", "TelloLib\TelloLib.csproj", "{FC69241F-8C76-45DE-A2D4-B2A5CD984014}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloLib", "src\TelloLib\TelloLib.csproj", "{FC69241F-8C76-45DE-A2D4-B2A5CD984014}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloConsole", "TelloConsole\TelloConsole.csproj", "{6E71816D-0976-4806-955F-D90E14CFC1A2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloConsole", "src\TelloConsole\TelloConsole.csproj", "{6E71816D-0976-4806-955F-D90E14CFC1A2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloTello", "HelloTello\HelloTello.csproj", "{A9F06754-2853-4CBF-9BC4-030A0FCC1B2C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloTello", "src\HelloTello\HelloTello.csproj", "{A9F06754-2853-4CBF-9BC4-030A0FCC1B2C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFMpeg.Xamarin", "xamarin-android-ffmpeg\FFMpeg.Xamarin\FFMpeg.Xamarin.csproj", "{1049745B-3D4C-4DFF-AD8B-DC46F460B5D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FFMpeg.Xamarin", "src\xamarin-android-ffmpeg\FFMpeg.Xamarin\FFMpeg.Xamarin.csproj", "{1049745B-3D4C-4DFF-AD8B-DC46F460B5D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatConToCsv", "DatConToCsv\DatConToCsv.csproj", "{36BFE91E-3F05-4A45-BF96-F5C00A907CA0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatConToCsv", "src\DatConToCsv\DatConToCsv.csproj", "{36BFE91E-3F05-4A45-BF96-F5C00A907CA0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloLogParser", "TelloLogParser\TelloLogParser.csproj", "{107DB5E3-F4F9-4C28-A16B-0DDEC8CCF801}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloLogParser", "src\TelloLogParser\TelloLogParser.csproj", "{107DB5E3-F4F9-4C28-A16B-0DDEC8CCF801}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".NetFramework", ".NetFramework", "{D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".NetStandard", ".NetStandard", "{71472C58-EEC6-4A62-81E8-29B1DE384304}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{AFAF2D92-DD69-47E6-B757-3DCBC3B54280}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,6 +62,15 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{939A0652-8FE0-45B2-9342-535B63B23B94} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{FC69241F-8C76-45DE-A2D4-B2A5CD984014} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{6E71816D-0976-4806-955F-D90E14CFC1A2} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{A9F06754-2853-4CBF-9BC4-030A0FCC1B2C} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{1049745B-3D4C-4DFF-AD8B-DC46F460B5D4} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{36BFE91E-3F05-4A45-BF96-F5C00A907CA0} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
+		{107DB5E3-F4F9-4C28-A16B-0DDEC8CCF801} = {D6DAD75E-0F27-4A3A-9F57-6C64B006ED80}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30C3D4AB-41AD-4804-8728-3689204C2FB6}

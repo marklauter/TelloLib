@@ -6,15 +6,11 @@ namespace Tello.Core
     {
         public EulerAngle(double roll, double pitch, double yaw, AngleTypes angleType)
         {
-            Roll = X = roll;
-            Pitch = Y = pitch;
-            Yaw = Z = yaw;
+            Roll = roll;
+            Pitch = pitch;
+            Yaw = yaw;
             AngleType = angleType;
         }
-
-        public readonly double X;
-        public readonly double Y;
-        public readonly double Z;
 
         public readonly double Roll;
         public readonly double Pitch;
@@ -26,9 +22,9 @@ namespace Tello.Core
         {
             return AngleType == AngleTypes.Radians ? this :
                 new EulerAngle(
-                    Yaw / (180 / Math.PI),
-                    Pitch / (180 / Math.PI),
                     Roll / (180 / Math.PI),
+                    Pitch / (180 / Math.PI), 
+                    Yaw / (180 / Math.PI),
                     AngleTypes.Radians);
         }
 
@@ -36,11 +32,29 @@ namespace Tello.Core
         {
             return AngleType == AngleTypes.Degrees ? this :
                 new EulerAngle(
-                    Yaw * (180 / Math.PI),
-                    Pitch * (180 / Math.PI),
                     Roll * (180 / Math.PI),
+                    Pitch * (180 / Math.PI),
+                    Yaw * (180 / Math.PI),
                     AngleTypes.Degrees);
         }
+
+        //Quaterniond toQuaternion(double pitch, double roll, double yaw)
+        //{
+        //    Quaterniond q;
+        //    // Abbreviations for the various angular functions
+        //    double cy = cos(yaw * 0.5);
+        //    double sy = sin(yaw * 0.5);
+        //    double cr = cos(roll * 0.5);
+        //    double sr = sin(roll * 0.5);
+        //    double cp = cos(pitch * 0.5);
+        //    double sp = sin(pitch * 0.5);
+
+        //    q.w() = cy * cr * cp + sy * sr * sp;
+        //    q.x() = cy * sr * cp - sy * cr * sp;
+        //    q.y() = cy * cr * sp + sy * sr * cp;
+        //    q.z() = sy * cr * cp - cy * sr * sp;
+        //    return q;
+        //}
 
         public bool Equals(EulerAngle other)
         {

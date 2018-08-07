@@ -1,7 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using Tello.Core;
 
 namespace Test.Tello.Core
@@ -9,46 +7,157 @@ namespace Test.Tello.Core
     [TestClass]
     public class Quaternion_Test
     {
-        // to verify angles https://quaternions.online/
+        // test cases : http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/steps/index.htm
         [TestMethod]
-        public void ToEulerAngle_ZValue()
+        public void ToEulerAngle()
         {
-            var quaternion = new Quaternion(0.0F, 0.0F, 0.0F, 1.0F);
+            var quaternion = new Quaternion(1F, 0.0F, 0.0F, 0.0F);
+            var eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
 
-            var flyData = new FlyData()
-            {
-                Quaternion = quaternion
-            };
+            quaternion = new Quaternion(0.7071F, 0.0F, 0.7071F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
 
-            var result = flyData.toEuler();
+            quaternion = new Quaternion(0.0F, 0.0F, 1F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
 
-            var eulerRadians = quaternion.ToEulerAngle();
-            Assert.AreEqual(AngleTypes.Radians, eulerRadians.AngleType);
-            var eulerDegrees = eulerRadians.ToDegrees();
-            Assert.AreEqual(180.0, Math.Round(eulerDegrees.Z, 0));
+            quaternion = new Quaternion(0.7071F, 0.0F, -0.7071F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
 
+            quaternion = new Quaternion(0.7071F, 0.0F, 0.0F, 0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, 0.5F, 0.5F, 0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.7071F, 0.7071F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, -0.5F, -0.5F, 0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.7071F, 0.0F, 0.0F, -0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, -0.5F, 0.5F, -0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, -0.7071F, 0.7071F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, 0.5F, -0.5F, -0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.7071F, 0.7071F, 0.0F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, 0.5F, 0.5F, -0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.0F, 0.7071F, -0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, 0.5F, -0.5F, 0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Roll, 0));
+            
+            quaternion = new Quaternion(0.0F, 1.0F, 0.0F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.7071F, 0.0F, -0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.0F, 0.0F, 1.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.7071F, 0.0F, 0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Roll, 0));
+            
+            quaternion = new Quaternion(0.7071F, -0.7071F, 0.0F, 0.0F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, -0.5F, 0.5F, 0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.0F, 0.0F, 0.7071F, 0.7071F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(180.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Roll, 0));
+
+            quaternion = new Quaternion(0.5F, -0.5F, -0.5F, -0.5F);
+            eulerAngle = quaternion.ToEulerAngle().ToDegrees();
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Yaw, 0));
+            Assert.AreEqual(0.0, Math.Round(eulerAngle.Pitch, 0));
+            Assert.AreEqual(-90.0, Math.Round(eulerAngle.Roll, 0));
         }
 
-        [TestMethod]
-        public void ToEulerAngle_YValue()
-        {
-            var quaternion = new Quaternion(0.707F, 0.0F, 0.707F, 0.0F);
-            var eulerRadians = quaternion.ToEulerAngle();
-            Assert.AreEqual(AngleTypes.Radians, eulerRadians.AngleType);
-            var eulerDegrees = eulerRadians.ToDegrees();
-            Assert.AreEqual(90.0, Math.Round(eulerDegrees.Y, 0));
-        }
-
-        [TestMethod]
-        public void ToEulerAngle_XValue()
-        {
-            var quaternion = new Quaternion(0.707F, 1.707F, 0.0F, 0.0F);
-            var eulerRadians = quaternion.ToEulerAngle();
-            Assert.AreEqual(AngleTypes.Radians, eulerRadians.AngleType);
-            var eulerDegrees = eulerRadians.ToDegrees();
-            Assert.AreEqual(180.0, Math.Round(eulerDegrees.X, 0));
-        }
 
 
     }
 }
+

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Tello.Core
+﻿namespace Tello.Core
 {
     public enum AngleTypes
     {

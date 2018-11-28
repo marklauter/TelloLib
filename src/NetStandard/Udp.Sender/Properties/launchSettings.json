@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Udp.Sender": {
+      "commandName": "Project",
+      "commandLineArgs": "9010"
+    }
+  }
+}

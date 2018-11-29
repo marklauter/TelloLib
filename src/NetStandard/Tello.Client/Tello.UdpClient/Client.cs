@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Tello.Udp
@@ -48,11 +49,20 @@ namespace Tello.Udp
 
     public class Request : Message
     {
-        public Request(byte[] datagram) : base(Guid.NewGuid(), datagram)
+        public Request(byte[] datagram, bool setSequence = true, bool setCrc = true) : base(Guid.NewGuid(), datagram)
         {
-            SetSequence(Datagram);
-            SetCRC(Datagram);
+            if (setSequence)
+            {
+                SetSequence(Datagram);
+            }
+
+            if (setCrc)
+            {
+                SetCRC(Datagram);
+            }
         }
+
+        public int UserData { get; set; }
 
         #region CRC
         // frame check sequence table
@@ -140,7 +150,7 @@ namespace Tello.Udp
 
     public class Response : Message
     {
-        public Response(Guid id, byte[] datagram) : base(Guid.NewGuid(), datagram) { }
+        public Response(Guid id, byte[] datagram) : base(id, datagram) { }
     }
 
     public class Client : IDisposable
@@ -161,17 +171,26 @@ namespace Tello.Udp
         public event EventHandler<ResponseReceivedArgs> ResponseReceived;
         public string Destination { get; }
 
-        public void Connect()
+        public bool Connect()
         {
+            var result = false;
             Disconnect();
+            if (IsNetworkAvailable)
+            {
+                _client = new UdpClient
+                {
+                    ExclusiveAddressUse = false
+                };
+                _client.Connect(_endPoint);
 
-            _client = new UdpClient();
-            _client.Connect(_endPoint);
+                result = true;
+            }
+            return result;
         }
 
         public void Disconnect()
         {
-            if (_client != null)
+            if (IsConnected)
             {
                 _client.Close();
                 _client.Dispose();
@@ -179,6 +198,7 @@ namespace Tello.Udp
             }
         }
 
+        public bool IsNetworkAvailable => NetworkInterface.GetIsNetworkAvailable();
         public bool IsConnected => _client != null;
 
         private class ReceiverState
@@ -206,7 +226,7 @@ namespace Tello.Udp
             }
         }
 
-        public void OnReceive(IAsyncResult ar)
+        private void OnReceive(IAsyncResult ar)
         {
             if (!_isDisposed)
             {

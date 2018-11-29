@@ -10,14 +10,6 @@ namespace Udp.Sender
     {
         private static void Main(string[] args)
         {
-
-            //byte b = 1;
-            //Console.WriteLine($"b: {b.ToString("X2")}");
-            //Console.WriteLine($"b: {Convert.ToString(b, 2).PadLeft(16, '0')}");
-            //var x = b << 8;
-            //Console.WriteLine($"x: {x.ToString("X2")}");
-            //Console.WriteLine($"x: {Convert.ToString(x, 2).PadLeft(16, '0')}");
-
             if (args.Length == 0)
             {
                 Console.WriteLine("port is required arg");
@@ -34,7 +26,7 @@ namespace Udp.Sender
         {
             Console.WriteLine($"sending on port {8889}");
 
-            using (var client = new Client("192.168.10.1", 8889))
+            using (var client = new Messenger("192.168.10.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceived;
                 if (!client.Connect())
@@ -110,7 +102,7 @@ namespace Udp.Sender
         {
             Console.WriteLine($"sending on port {port}");
 
-            using (var client = new Client("127.0.0.1", port))
+            using (var client = new Messenger("127.0.0.1", port))
             {
                 client.ResponseReceived += Client_ResponseReceived;
                 client.Connect();

@@ -2,7 +2,7 @@
 {
     public enum Commands
     {
-        ConnectionRequest,
+        Connect,
         TakeOff,
         Land
     }

@@ -153,9 +153,9 @@ namespace Tello.Udp
         public Response(Guid id, byte[] datagram) : base(id, datagram) { }
     }
 
-    public class Client : IDisposable
+    public class Messenger : IDisposable
     {
-        public Client(string ip, int port) : base()
+        public Messenger(string ip, int port) : base()
         {
             if (String.IsNullOrEmpty(ip))
             {

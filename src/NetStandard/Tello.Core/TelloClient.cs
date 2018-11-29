@@ -20,13 +20,13 @@ namespace Tello.Core
 
         public TelloClient()
         {
-            _client = new Client(IP, PORT);
+            _client = new Messenger(IP, PORT);
             _client.ResponseReceived += _client_ResponseReceived;
         }
 
         private const string IP = "192.168.10.1";
         private const int PORT = 8889;
-        private readonly Client _client;
+        private readonly Messenger _client;
         private readonly ConcurrentDictionary<Guid, Request> _requests = new ConcurrentDictionary<Guid, Request>();
         private ConnectionStates _connectionState = ConnectionStates.Disconnected;
         public ConnectionStates ConnectionState
@@ -42,12 +42,15 @@ namespace Tello.Core
             }
         }
 
+        /// <summary>
+        /// establish connection and command session with tello
+        /// </summary>
         public void Connect()
         {
             ConnectionState = ConnectionStates.Connecting;
             _client.Connect();
 
-            var request = RequestFactory.GetRequest(Commands.ConnectionRequest);
+            var request = RequestFactory.GetRequest(Commands.Connect);
             _requests.TryAdd(request.Id, request);
             _client.Send(request);
         }
@@ -63,7 +66,7 @@ namespace Tello.Core
             var command = (Commands)e.Request.UserData;
             switch (command)
             {
-                case Commands.ConnectionRequest:
+                case Commands.Connect:
                     if (ConnectionState == ConnectionStates.Connecting)
                     {
                         var message = Encoding.UTF8.GetString(e.Response.Datagram);

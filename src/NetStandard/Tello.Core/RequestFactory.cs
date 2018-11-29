@@ -11,7 +11,10 @@ namespace Tello.Core
             {
                 default:
                 case Commands.ConnectionRequest:
-                    return new Request(Encoding.UTF8.GetBytes("conn_req:\x96\x17"), false, false)
+                    var datagram = Encoding.UTF8.GetBytes("conn_req:\x00\x00");
+                    datagram[datagram.Length - 2] = 0x96;
+                    datagram[datagram.Length - 1] = 0x17;
+                    return new Request(datagram, false, false)
                     {
                         UserData = (int)command
                     };

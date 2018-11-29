@@ -10,6 +10,14 @@ namespace Udp.Sender
     {
         private static void Main(string[] args)
         {
+
+            //byte b = 1;
+            //Console.WriteLine($"b: {b.ToString("X2")}");
+            //Console.WriteLine($"b: {Convert.ToString(b, 2).PadLeft(16, '0')}");
+            //var x = b << 8;
+            //Console.WriteLine($"x: {x.ToString("X2")}");
+            //Console.WriteLine($"x: {Convert.ToString(x, 2).PadLeft(16, '0')}");
+
             if (args.Length == 0)
             {
                 Console.WriteLine("port is required arg");
@@ -45,15 +53,34 @@ namespace Udp.Sender
                         break;
                     }
 
-                    var datagram = Encoding.UTF8.GetBytes("conn_req:\x00\x00");
-                    datagram[datagram.Length - 2] = 0x96;
-                    datagram[datagram.Length - 1] = 0x17;
-
-                    var request = new Request(datagram, false, false)
+                    if (message.ToLower() == "c")
                     {
-                        UserData = 0
-                    };
-                    client.Send(request);
+                        var datagram = Encoding.UTF8.GetBytes("conn_req:\x00\x00");
+                        datagram[datagram.Length - 2] = 0x96;
+                        datagram[datagram.Length - 1] = 0x17;
+
+                        var request = new Request(datagram, false, false)
+                        {
+                            UserData = 0
+                        };
+                        client.Send(request);
+                    }
+                    if(message.ToLower() == "t")
+                    {
+                        var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
+                        {
+                            UserData = 1
+                        };
+                        client.Send(request);
+                    }
+                    if (message.ToLower() == "l")
+                    {
+                        var request = new Request(new byte[] { 0xcc, 0x60, 0x00, 0x27, 0x68, 0x55, 0x00, 0xe5, 0x01, 0x00, 0xba, 0xc7 })
+                        {
+                            UserData = 2
+                        };
+                        client.Send(request);
+                    }
                 }
             }
         }
@@ -74,6 +101,9 @@ namespace Udp.Sender
             builder.AppendLine();
             builder.Append("----------------------");
             Console.WriteLine(builder.ToString());
+
+            var message = Encoding.UTF8.GetString(e.Response.Datagram);
+            Console.WriteLine($"message: {message}");
         }
 
         private static void TestTelloUdp(int port)

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 using Tello.Udp;
+using System.Linq;
 
 namespace Tello.Core
 {
@@ -53,6 +54,12 @@ namespace Tello.Core
 
         private void _client_ResponseReceived(object sender, ResponseReceivedArgs e)
         {
+            _requests.TryGetValue(e.Request.Id, out var request);
+            if (!request.Datagram.SequenceEqual(e.Request.Datagram))
+            {
+                throw new Exception("request/response mismatch");
+            }
+
             var command = (Commands)e.Request.UserData;
             switch (command)
             {

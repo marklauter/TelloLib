@@ -87,7 +87,6 @@ namespace TelloLib
 
             _client.Send(packet);
         }
-
         public static void QueryUnk(int cmd)
         {
             var packet = new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x48, 0xff, 0x00, 0x06, 0x00, 0xe9, 0xb3 };

@@ -2,8 +2,12 @@
 {
     public enum Commands
     {
-        Connect,
+        Connect, // no CRC
         TakeOff,
-        Land
+        ThrowTakeOff,
+        Land,
+        RequestIFrame, // no CRC
+        SetMaxHeight,
+        QueryUnk,
     }
 }

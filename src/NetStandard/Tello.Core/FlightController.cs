@@ -13,12 +13,12 @@ namespace Tello.Core
         Connected,
     }
 
-    public class TelloClient : IDisposable
+    public class FlightController : IDisposable
     {
         public delegate void ConnectionStageChangingDeligate(ConnectionStates oldState, ConnectionStates newState);
         public static event ConnectionStageChangingDeligate ConnectionStateChanging;
 
-        public TelloClient()
+        public FlightController()
         {
             _client = new Messenger(IP, PORT);
             _client.ResponseReceived += _client_ResponseReceived;
@@ -26,6 +26,7 @@ namespace Tello.Core
 
         private const string IP = "192.168.10.1";
         private const int PORT = 8889;
+
         private readonly Messenger _client;
         private readonly ConcurrentDictionary<Guid, Request> _requests = new ConcurrentDictionary<Guid, Request>();
         private ConnectionStates _connectionState = ConnectionStates.Disconnected;
@@ -47,12 +48,24 @@ namespace Tello.Core
         /// </summary>
         public void Connect()
         {
-            ConnectionState = ConnectionStates.Connecting;
-            _client.Connect();
+            if (ConnectionState != ConnectionStates.Disconnected)
+            {
+                ConnectionState = ConnectionStates.Connecting;
+                _client.Connect();
 
-            var request = RequestFactory.GetRequest(Commands.Connect);
-            _requests.TryAdd(request.Id, request);
-            _client.Send(request);
+                var request = RequestFactory.GetRequest(Commands.Connect);
+                _requests.TryAdd(request.Id, request);
+                _client.Send(request);
+            }
+        }
+
+        public void Disconnect()
+        {
+            if (ConnectionState != ConnectionStates.Disconnected)
+            {
+                ConnectionState = ConnectionStates.Disconnected;
+                _client.Disconnect();
+            }
         }
 
         private void _client_ResponseReceived(object sender, ResponseReceivedArgs e)

@@ -126,6 +126,33 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
+                    if (message.ToLower() == "p")
+                    {
+                        //var request = RequestFactory.GetRequest(Commands.TakeOff);
+                        //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
+                        //{
+                        //    UserData = 1
+                        //};
+                        var request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
+                        {
+                            UserData = 6
+                        };
+                        client.Send(request);
+                    }
+                    if (message.ToLower() == "v")
+                    {
+                        //var request = RequestFactory.GetRequest(Commands.TakeOff);
+                        //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
+                        //{
+                        //    UserData = 1
+                        //};
+                        var request = new Request(Encoding.ASCII.GetBytes("sdk?"), false, false)
+                        {
+                            UserData = 7
+                        };
+                        client.Send(request);
+                    }
+
                     //if (message.ToLower() == "s")
                     //{
                     //    var request = RequestFactory.GetRequest(Commands.RequestIFrame);

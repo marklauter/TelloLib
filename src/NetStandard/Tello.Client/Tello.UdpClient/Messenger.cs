@@ -179,7 +179,8 @@ namespace Tello.Udp
             {
                 _client = new UdpClient
                 {
-                    ExclusiveAddressUse = false
+                    ExclusiveAddressUse = false,
+                    DontFragment = true
                 };
                 _client.Connect(_endPoint);
 

@@ -30,8 +30,10 @@ namespace Udp.Listener
                 {
                     var data = client.Receive(ref endPoint);
 
-                    var response = Encoding.ASCII.GetBytes("OK");
-                    client.Send(response, response.Length, endPoint);
+                    //var response = Encoding.ASCII.GetBytes("OK");
+                    //client.Send(response, response.Length, endPoint);
+                    var s = Encoding.UTF8.GetString(data);
+                    Console.WriteLine(s);
 
                     var builder = new StringBuilder();
                     builder.AppendLine($"{DateTime.Now}: {data.Length} bytes received from {endPoint.Address}:{endPoint.Port}");

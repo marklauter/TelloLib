@@ -3,7 +3,7 @@ using Tello.Udp;
 
 namespace Tello.Core
 {
-    internal static class RequestFactory
+    public static class RequestFactory
     {
         public static Request GetRequest(Commands command, params object[] args)
         {

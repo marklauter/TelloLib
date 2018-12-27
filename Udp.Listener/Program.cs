@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using Tello.Udp;
 
 namespace Udp.Listener
 {
@@ -18,10 +19,50 @@ namespace Udp.Listener
             var port = Int32.Parse(args[0]);
             Console.WriteLine($"listening on port {port}");
 
-            Listen(port);
+            Listen2(port);
         }
 
-        private static void Listen(int port)
+        private static void Listen2(int port)
+        {
+            var receiver = new Receiver(port);
+            receiver.DatagramReceived += Receiver_DatagramReceived;
+            receiver.BeginReceiving();
+            Console.WriteLine("press any key to stop");
+            Console.WriteLine("==============================================");
+            Console.WriteLine();
+            Console.ReadKey();
+
+
+            //while (true)
+            //{
+            //    Task.Yield();
+            //}
+        }
+
+        private static void Receiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
+        {
+            var builder = new StringBuilder();
+            builder.AppendLine($"{DateTime.Now}: {e.Datagram.Length} bytes received from {e.RemoteEndpoint.Address}:{e.RemoteEndpoint.Port}");
+            builder.AppendLine("----------------------");
+
+            builder.AppendLine( Encoding.UTF8.GetString(e.Datagram));
+            builder.AppendLine("----------------------");
+
+            for (var i = 0; i < e.Datagram.Length; ++i)
+            {
+                if (i > 0 && i % 2 == 0)
+                {
+                    builder.Append(" ");
+                }
+
+                builder.Append(e.Datagram[i].ToString("X2"));
+            }
+            builder.AppendLine();
+            builder.AppendLine("==============================================");
+            Console.WriteLine(builder.ToString());
+        }
+
+        private static void Listen1(int port)
         {
             var endPoint = new IPEndPoint(IPAddress.Any, 0);
             using (var client = new UdpClient(port))

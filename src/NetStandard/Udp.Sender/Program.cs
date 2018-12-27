@@ -25,11 +25,13 @@ namespace Udp.Sender
             //TestRawUdp(port);
         }
 
+        //https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
+
         private static void TestTelloUdp2TelloTxt()
         {
             Console.WriteLine($"sending on port {8889}");
 
-            using (var client = new Messenger("192.168.10.1", 8889))
+            using (var client = new Transceiver("192.168.10.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceivedTxt;
 
@@ -44,9 +46,13 @@ namespace Udp.Sender
 
                     if (message.ToLower() == "c")
                     {
-                        if (!client.Connect())
+                        try
                         {
-                            Console.WriteLine("failed to connect to udp");
+                            client.Connect();
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"failed to connect to udp. ex: {ex}");
                             Console.ReadKey();
                             return;
                         }
@@ -113,14 +119,14 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "m")
+                    if (message.ToLower() == "v")
                     {
                         //var request = RequestFactory.GetRequest(Commands.TakeOff);
                         //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
                         //{
                         //    UserData = 1
                         //};
-                        var request = new Request(Encoding.ASCII.GetBytes("mon"), false, false)
+                        var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
                         {
                             UserData = 5
                         };
@@ -136,19 +142,6 @@ namespace Udp.Sender
                         var request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
                         {
                             UserData = 6
-                        };
-                        client.Send(request);
-                    }
-                    if (message.ToLower() == "v")
-                    {
-                        //var request = RequestFactory.GetRequest(Commands.TakeOff);
-                        //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
-                        //{
-                        //    UserData = 1
-                        //};
-                        var request = new Request(Encoding.ASCII.GetBytes("sdk?"), false, false)
-                        {
-                            UserData = 7
                         };
                         client.Send(request);
                     }
@@ -201,12 +194,16 @@ namespace Udp.Sender
         {
             Console.WriteLine($"sending on port {8889}");
 
-            using (var client = new Messenger("192.168.10.1", 8889))
+            using (var client = new Transceiver("192.168.10.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceived;
-                if (!client.Connect())
+                try
                 {
-                    Console.WriteLine("failed to connect to udp");
+                    client.Connect();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"failed to connect to udp. ex: {ex}");
                     Console.ReadKey();
                     return;
                 }
@@ -297,7 +294,7 @@ namespace Udp.Sender
         {
             Console.WriteLine($"sending on port {port}");
 
-            using (var client = new Messenger("127.0.0.1", port))
+            using (var client = new Transceiver("127.0.0.1", port))
             {
                 client.ResponseReceived += Client_ResponseReceived;
                 client.Connect();

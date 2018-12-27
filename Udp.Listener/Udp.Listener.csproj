@@ -6,4 +6,8 @@
     <LangVersion>7.1</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\src\NetStandard\Tello.Client\Tello.UdpClient\Tello.Udp.csproj" />
+  </ItemGroup>
+
 </Project>

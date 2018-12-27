@@ -27,11 +27,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tello.Core", "src\NetStanda
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.Tello.Core", "src\NetStandard\Tello.Core.Test\Test.Tello.Core.csproj", "{CE9A63DA-A717-473D-9F05-17E73CE13316}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tello.Udp", "src\NetStandard\Tello.Client\Tello.UdpClient\Tello.Udp.csproj", "{A25A8A24-4730-426F-A8BC-AD0882AF8FBB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tello.Udp", "src\NetStandard\Tello.Client\Tello.UdpClient\Tello.Udp.csproj", "{A25A8A24-4730-426F-A8BC-AD0882AF8FBB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udp.Listener", "Udp.Listener\Udp.Listener.csproj", "{841BE089-895B-4F43-ABAA-424512826680}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udp.Listener", "Udp.Listener\Udp.Listener.csproj", "{841BE089-895B-4F43-ABAA-424512826680}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udp.Sender", "src\NetStandard\Udp.Sender\Udp.Sender.csproj", "{3D2DBA09-F65F-45DC-9D9C-58C580B0BF31}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udp.Sender", "src\NetStandard\Udp.Sender\Udp.Sender.csproj", "{3D2DBA09-F65F-45DC-9D9C-58C580B0BF31}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UWP", "UWP", "{37A82A66-43C1-4A37-83F4-0D5D1ECD9596}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Tasks;
 using Tello.Core;
 using Tello.Udp;
 
@@ -27,6 +28,7 @@ namespace Udp.Sender
 
         //https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
 
+        private static bool _video = false;
         private static void TestTelloUdp2TelloTxt()
         {
             Console.WriteLine($"sending on port {8889}");
@@ -37,9 +39,9 @@ namespace Udp.Sender
 
                 while (true)
                 {
-                    Console.WriteLine("enter connect to tello or exit to quit:");
+                    Console.WriteLine("enter 'c' connect to tello or 'q' to quit.");
                     var message = Console.ReadLine();
-                    if (message.ToLower() == "exit")
+                    if (message.ToLower() == "q")
                     {
                         break;
                     }
@@ -64,6 +66,13 @@ namespace Udp.Sender
                         var request = new Request(Encoding.ASCII.GetBytes("command"), false, false)
                         {
                             UserData = 0
+                        };
+                        client.Send(request);
+
+                        Task.Delay(1000 * 5);
+                        request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
+                        {
+                            UserData = 6
                         };
                         client.Send(request);
                     }
@@ -126,11 +135,26 @@ namespace Udp.Sender
                         //{
                         //    UserData = 1
                         //};
-                        var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
+                        if (!_video)
                         {
-                            UserData = 5
-                        };
-                        client.Send(request);
+                            Console.WriteLine("enabling video capture");
+                            var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
+                            {
+                                UserData = 5
+                            };
+                            client.Send(request);
+                            _video = true;
+                        }
+                        else
+                        {
+                            Console.WriteLine("disabling video capture");
+                            var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false)
+                            {
+                                UserData = 5
+                            };
+                            client.Send(request);
+                            _video = false;
+                        }
                     }
                     if (message.ToLower() == "p")
                     {

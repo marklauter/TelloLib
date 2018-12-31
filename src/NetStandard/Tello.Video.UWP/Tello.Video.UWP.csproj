@@ -145,7 +145,6 @@
     <Content Include="tello.mp4">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="tello2.mp4" />
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -166,6 +165,10 @@
     <ProjectReference Include="..\Tello.Client\Tello.UdpClient\Tello.Udp.csproj">
       <Project>{A25A8A24-4730-426F-A8BC-AD0882AF8FBB}</Project>
       <Name>Tello.Udp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tello.Video\Tello.Video.csproj">
+      <Project>{11347c02-1e45-47a8-b373-cc6ec755da5f}</Project>
+      <Name>Tello.Video</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

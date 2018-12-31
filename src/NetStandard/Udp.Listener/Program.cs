@@ -40,10 +40,10 @@ namespace Udp.Listener
             Console.WriteLine("==============================================");
             Console.WriteLine();
             Console.ReadKey();
-            //if (stream != null)
-            //{
-            //    stream.Close();
-            //}
+            if (_stream != null)
+            {
+                _stream.Close();
+            }
 
             //while (true)
             //{

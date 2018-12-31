@@ -1,6 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Tello.Udp;
+﻿using System.Collections.Concurrent;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Tello.Video
 {
@@ -8,73 +10,76 @@ namespace Tello.Video
     {
         public VideoServer()
         {
-            _receiver = new Receiver(11111);
-            _receiver.DatagramReceived += _receiver_DatagramReceived;
-            _receiver.BeginReceiving();
         }
 
-        private readonly Receiver _receiver;
-        private void _receiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
+        private readonly ReaderWriterLockSlim _gate = new ReaderWriterLockSlim();
+        private bool _running = false;
+        private bool Running
         {
-            for(var i = 0; i < e.Datagram.Length; ++i)
+            get
             {
-                HandleByte(e.Datagram[i]);
+                var running = false;
+                _gate.EnterReadLock();
+                try
+                {
+                    running = _running;
+                }
+                finally
+                {
+                    _gate.ExitReadLock();
+                }
+                return running;
+            }
+            set
+            {
+                _gate.EnterWriteLock();
+                try
+                {
+                    _running = value;
+                }
+                finally
+                {
+                    _gate.ExitWriteLock();
+                }
             }
         }
 
-        private void HandleByte(byte b)
+        public async void Start(int port = 11111)
         {
-            switch (_state)
+            if (!Running)
             {
-                case State.ExpectHeaderFirstZero:
-                    if(b == 0x00)
-                    {
-                        _state = State.ExpectHeaderSecondZero;
-                    }
-                    break;
-                case State.ExpectHeaderSecondZero:
-                    break;
-                case State.ExpectHeaderThirdZero:
-                    break;
-                case State.ExpectHeader0x01:
-                    break;
-                case State.ExpectHeaderType:
-                    break;
-                case State.ExpectHeaderTwo:
-                    break;
-                case State.ExpectSizeLSB:
-                    break;
-                case State.ExpectSizeMSSB:
-                    break;
-                case State.Payload:
-                    break;
-                default:
-                    break;
+                Running = true;
+                await Task.Run(() => { Listen(port); });
             }
         }
 
-        private readonly List<byte> _frameBuffer;
-
-        public event EventHandler<byte[]> FrameReceived;
-        private void FrameReady(byte[] frame)
+        public void Stop()
         {
-            FrameReceived?.Invoke(this, frame);
+            Running = false;
         }
 
-        public enum State
+        private readonly ConcurrentQueue<byte[]> _samples = new ConcurrentQueue<byte[]>();
+
+        internal void Listen(int port)
         {
-            ExpectHeaderFirstZero,
-            ExpectHeaderSecondZero,
-            ExpectHeaderThirdZero,
-            ExpectHeader0x01,
-
-            ExpectHeaderType,
-            ExpectHeaderTwo,
-            ExpectSizeLSB,
-            ExpectSizeMSSB,
-            Payload,
+            var endPoint = new IPEndPoint(IPAddress.Any, 0);
+            using (var client = new UdpClient(port))
+            {
+                while (Running)
+                {
+                    var datagram = client.Receive(ref endPoint);
+                    _samples.Enqueue(datagram);
+                }
+            }
         }
-        private State _state = State.ExpectHeaderFirstZero;
 
+        public byte[] GetSample()
+        {
+            if (_samples.TryDequeue(out var sample))
+            {
+                return sample;
+            }
+            return null;
+        }
     }
 }

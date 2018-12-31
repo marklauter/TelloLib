@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using Tello.Udp;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
-using Windows.Media.Transcoding;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
@@ -29,7 +26,7 @@ using Windows.UI.Xaml.Navigation;
 
 //    the memory stream gets too big and then crashes
 
-namespace Tello.Video
+namespace Tello.Video.UWP
 {
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
@@ -42,17 +39,11 @@ namespace Tello.Video
 
         }
 
-        private MediaTranscoder _transcoder = new MediaTranscoder()
-        {
-        };
+        private readonly VideoServer _videoServer = new VideoServer();
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-
-            //foo();
-            //var x = new FileOpenPicker();
-
 
             //var stateReceiver = new Receiver(8890);
             //stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
@@ -72,6 +63,8 @@ namespace Tello.Video
             //}
 
             SetupMedia();
+
+            _videoServer.Start(11111);
         }
 
         //private byte[] _fullvideo;
@@ -135,13 +128,13 @@ namespace Tello.Video
         }
 
         private bool _mediaInitialized = false;
-        private MemoryStream _stream = new MemoryStream();
         private void SetupMedia()
         {
             if (!_mediaInitialized)
             {
+                _mediaInitialized = true;
+
                 var vep = VideoEncodingProperties.CreateH264();
-                //vep.Bitrate = 32;
                 vep.Height = 720;
                 vep.Width = 960;
 
@@ -150,7 +143,7 @@ namespace Tello.Video
                 var mss = new MediaStreamSource(vsd)
                 {
                     IsLive = true,
-                    BufferTime = TimeSpan.FromSeconds(0.0)
+                    BufferTime = TimeSpan.FromMilliseconds(250)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
@@ -159,58 +152,41 @@ namespace Tello.Video
                 mss.SampleRendered += Mss_SampleRendered;
 
                 _mediaPlayerElement.SetMediaStreamSource(mss);
-                _mediaInitialized = true;
+
+                Debug.WriteLine("media element initialized");
             }
         }
 
         private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
         {
-            //throw new NotImplementedException();
+            Debug.WriteLine("Mss_SampleRendered");
         }
 
         private void Mss_Closed(MediaStreamSource sender, MediaStreamSourceClosedEventArgs args)
         {
-            //throw new NotImplementedException();
+            Debug.WriteLine("Mss_Closed");
         }
 
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
-            //throw new NotImplementedException();
+            Debug.WriteLine("Mss_Starting");
         }
 
         private DateTime? _started;
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
-            //List<byte[]> segments;
-            //lock (_gate)
-            //{
-            //    segments = new List<byte[]>(_frameSegments);
-            //    _frameSegments.Clear();
-            //    _frameSegments.Capacity = segments.Count;
-            //}
-
-            //var sampleSize = 0;
-            //for (var i = 0; i < segments.Count; ++i)
-            //{
-            //    sampleSize += segments[i].Length;
-            //}
-            //var sample = new byte[sampleSize];
-            //var offset = 0;
-            //for (var i = 0; i < segments.Count; ++i)
-            //{
-            //    Array.Copy(segments[i], 0, sample, offset, segments[i].Length);
-            //    offset += segments[i].Length;
-            //}
-
+            Debug.WriteLine("Mss_SampleRequested");
             args.Request.ReportSampleProgress(100);
-            if (!_started.HasValue)
+            var sample = _videoServer.GetSample();
+            if (sample != null)
             {
-                _started = DateTime.Now;
+                if (!_started.HasValue)
+                {
+                    _started = DateTime.Now;
+                }
+                args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.AsBuffer(), DateTime.Now - _started.Value);
+                args.Request.ReportSampleProgress(100);
             }
-            args.Request.Sample = MediaStreamSample.CreateFromBuffer(_fullvideo.AsBuffer(), DateTime.Now - _started.Value);
-            //args.Request.Sample.Duration = TimeSpan.FromSeconds(_frameCount / 32.0);
-            _frameCount = 0;
-
         }
     }
 }

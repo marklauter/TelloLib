@@ -7,8 +7,8 @@
     <ProjectGuid>{30293FA0-A49D-410D-BC4A-96A437AF21FC}</ProjectGuid>
     <OutputType>AppContainerExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Tello.Video</RootNamespace>
-    <AssemblyName>Tello.Video</AssemblyName>
+    <RootNamespace>Tello.Video.UWP</RootNamespace>
+    <AssemblyName>Tello.Video.UWP</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <TargetPlatformIdentifier>UAP</TargetPlatformIdentifier>
     <TargetPlatformVersion Condition=" '$(TargetPlatformVersion)' == '' ">10.0.17763.0</TargetPlatformVersion>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -55,43 +56,71 @@ namespace Udp.Listener
             Console.WriteLine($"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}");
         }
 
+        private static Stopwatch _stopwatch = new Stopwatch();
+        private static long _frames = 0;
+        private static ulong _ttlSize = 0;
         private static long _size = 0;
-        //private static FileStream stream;
+        private static FileStream _stream;
         private static void VideoReceiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
         {
-            //if (stream == null)
-            //{
-            //    stream = new FileStream("tello.mp4", FileMode.OpenOrCreate);
-            //}
-            //stream.Write(e.Datagram, 0, e.Datagram.Length);
-
-            //var builder = new StringBuilder();
-            _size += e.Datagram.Length;
-            //builder.AppendLine($"{DateTime.Now}: {e.Datagram.Length} bytes received from {e.RemoteEndpoint.Address}:{e.RemoteEndpoint.Port}");
-            //builder.AppendLine("----------------------");
-            if (e.Datagram.Length != 1460)
+            try
             {
-                //builder.AppendLine($"frame size: {_size}");
-                Console.WriteLine($"frame size: {_size}");
-                _size = 0;
+                if (!_stopwatch.IsRunning)
+                    _stopwatch.Start();
+
+                if (_stream == null)
+                {
+                    _stream = new FileStream("tello.mp4", FileMode.OpenOrCreate);
+                }
+
+                if(_size == 0)
+                {
+                    // test for 0001
+                    if(e.Datagram[0] == 0 && e.Datagram[1] == 0 && e.Datagram[2] == 0 && e.Datagram[3] == 1)
+                    {
+                        Console.WriteLine("frame in sync");
+                    }
+                    else
+                    {
+                        Console.WriteLine("frame out of phase");
+                    }
+                }
+
+                _stream.Write(e.Datagram, 0, e.Datagram.Length);
+
+                //var builder = new StringBuilder();
+                _size += e.Datagram.Length;
+                _ttlSize += (ulong)e.Datagram.Length;
+                //builder.AppendLine($"{DateTime.Now}: {e.Datagram.Length} bytes received from {e.RemoteEndpoint.Address}:{e.RemoteEndpoint.Port}");
+                //builder.AppendLine("----------------------");
+                if (e.Datagram.Length != 1460)
+                {
+                    ++_frames;
+                    //builder.AppendLine($"frame size: {_size}");
+                    Console.WriteLine($"frame size: {_size}, frames: {_frames}, elapsed ms: {_stopwatch.ElapsedMilliseconds}, fps: {_frames / _stopwatch.Elapsed.TotalSeconds}, bit rate: {_ttlSize * 8 / _stopwatch.Elapsed.TotalSeconds}");
+                    _size = 0;
+                }
+
+
+                //builder.AppendLine( Encoding.UTF8.GetString(e.Datagram));
+                //builder.AppendLine("----------------------");
+
+                //for (var i = 0; i < e.Datagram.Length; ++i)
+                //{
+                //    if (i > 0 && i % 2 == 0)
+                //    {
+                //        builder.Append(" ");
+                //    }
+
+                //    builder.Append(e.Datagram[i].ToString("X2"));
+                //}
+                //builder.AppendLine();
+                //builder.AppendLine("==============================================");
+                //Console.WriteLine(builder.ToString());
             }
-
-
-            //builder.AppendLine( Encoding.UTF8.GetString(e.Datagram));
-            //builder.AppendLine("----------------------");
-
-            //for (var i = 0; i < e.Datagram.Length; ++i)
-            //{
-            //    if (i > 0 && i % 2 == 0)
-            //    {
-            //        builder.Append(" ");
-            //    }
-
-            //    builder.Append(e.Datagram[i].ToString("X2"));
-            //}
-            //builder.AppendLine();
-            //builder.AppendLine("==============================================");
-            //Console.WriteLine(builder.ToString());
+            catch(Exception ex) {
+                Debug.WriteLine(ex.ToString());
+            }
         }
 
         private static void Listen1(int port)

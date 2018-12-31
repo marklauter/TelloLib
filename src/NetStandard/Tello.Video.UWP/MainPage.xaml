@@ -10,7 +10,7 @@
 
     <Grid>
         <StackPanel BorderBrush="Black" BorderThickness="5">
-        <MediaPlayerElement x:Name="_mediaPlayerElement" AreTransportControlsEnabled="True" />
+            <MediaElement x:Name="_mediaPlayerElement" AreTransportControlsEnabled="True" Height="720" Source="goodvideo.mp4" />
         </StackPanel>
     </Grid>
 </Page>

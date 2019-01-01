@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -46,8 +46,10 @@ namespace Tello.Video
             }
         }
 
-        private readonly ConcurrentQueue<byte[]> _samples = new ConcurrentQueue<byte[]>();
+        //private readonly ConcurrentQueue<byte[]> _samples = new ConcurrentQueue<byte[]>();
 
+        private bool _dataReady = false;
+        public event EventHandler DataReady;
 
         public async void Start(int port = 11111)
         {
@@ -64,59 +66,94 @@ namespace Tello.Video
             Running = false;
         }
 
+        //private readonly ReaderWriterLockSlim _memgate = new ReaderWriterLockSlim();
+        private object _gate = new object();
+        private MemoryStream _stream = new MemoryStream();
+
+        private int _index = 0;
+        //private readonly MemoryStream[] _samples = new MemoryStream[64];
 
         internal void Listen(int port)
         {
             var endPoint = new IPEndPoint(IPAddress.Any, 0);
             using (var client = new UdpClient(port))
             {
-                var index = -1;
-                var datagrams = new byte[24][];
                 Debug.WriteLine($"video server listening on port: {port}");
+
                 while (Running)
                 {
-                    datagrams[++index] = client.Receive(ref endPoint);
-                    if (index == 23)
+                    var datagram = client.Receive(ref endPoint);
+                    if (!_dataReady)
                     {
-                        index = -1;
-                        BuildSample(datagrams);
-                        datagrams = new byte[24][];
+                        Debug.WriteLine("data ready");
+                        _dataReady = true;
+                        DataReady?.Invoke(this, EventArgs.Empty);
                     }
+                    _memgate.EnterReadLock();
+                    var stream = _samples[_index];
+                    _memgate.ExitReadLock();
+
+                    if (stream == null)
+                    {
+                        stream = CreateNewBufferStream();
+                    }
+
+                    stream.Write(datagram, 0, datagram.Length);
                 }
             }
         }
 
-        internal async void BuildSample(byte[][] datagrams)
+        //internal async void BuildSample(byte[][] datagrams)
+        //{
+        //    await Task.Run(() =>
+        //    {
+        //        var size = 0;
+        //        for (var i = 0; i < datagrams.Length; ++i)
+        //        {
+        //            size += datagrams[i].Length;
+        //        }
+
+        //        var buffer = new byte[size];
+        //        var offset = 0;
+        //        for (var i = 0; i < datagrams.Length; ++i)
+        //        {
+        //            var datagram = datagrams[i];
+        //            Array.Copy(datagram, 0, buffer, offset, datagram.Length);
+        //            offset += datagram.Length;
+        //        }
+
+        //        _samples.Enqueue(buffer);
+        //        Debug.WriteLine($"sample built: {_samples.Count}");
+        //    });
+        //}
+
+        public MemoryStream GetSample()
         {
-            await Task.Run(() =>
+            _memgate.EnterReadLock();
+            var index = _index;
+            var stream = _samples[_index];
+            _memgate.ExitReadLock();
+
+            _memgate.EnterWriteLock();
+            _samples[_index] = null;
+            _index = (_index + 1) % _samples.Length;
+            _memgate.ExitWriteLock();
+
+            if (stream != null)
             {
-                var size = 0;
-                for (var i = 0; i < datagrams.Length; ++i)
-                {
-                    size += datagrams[i].Length;
-                }
+                stream.Position = 0;
+            }
 
-                var buffer = new byte[size];
-                var offset = 0;
-                for (var i = 0; i < datagrams.Length; ++i)
-                {
-                    var datagram = datagrams[i];
-                    Array.Copy(datagram, 0, buffer, offset, datagram.Length);
-                    offset += datagram.Length;
-                }
-
-                _samples.Enqueue(buffer);
-                Debug.WriteLine($"sample built: {_samples.Count}");
-            });
+            return stream;
         }
 
-        public byte[] GetSample()
+        private MemoryStream CreateNewBufferStream()
         {
-            if (_samples.TryDequeue(out var sample))
-            {
-                return sample;
-            }
-            return null;
+            var stream = new MemoryStream(1460 * 24);
+            _memgate.EnterWriteLock();
+            _samples[_index] = stream;
+            _memgate.ExitWriteLock();
+            return stream;
         }
     }
 }

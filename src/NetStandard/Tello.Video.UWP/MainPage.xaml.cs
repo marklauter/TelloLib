@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices.WindowsRuntime;
+using System.IO;
 using System.Text;
 using Tello.Udp;
 using Windows.Media.Core;
@@ -64,6 +64,7 @@ namespace Tello.Video.UWP
 
             SetupMedia();
 
+            _videoServer.DataReady += _videoServer_DataReady;
             _videoServer.Start(11111);
         }
 
@@ -135,7 +136,7 @@ namespace Tello.Video.UWP
                 _mediaInitialized = true;
 
                 var vep = VideoEncodingProperties.CreateH264();
-                vep.Bitrate = 3000000;
+                //vep.Bitrate = 3000000;
                 vep.Height = 720;
                 vep.Width = 960;
 
@@ -144,14 +145,14 @@ namespace Tello.Video.UWP
                 var mss = new MediaStreamSource(vsd)
                 {
                     IsLive = true,
-                    BufferTime = TimeSpan.FromSeconds(0)
+                    BufferTime = TimeSpan.FromSeconds(2)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
                 mss.Starting += Mss_Starting;
-                mss.Closed += Mss_Closed;
-                mss.SampleRendered += Mss_SampleRendered;
-                mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
+                //mss.Closed += Mss_Closed;
+                //mss.SampleRendered += Mss_SampleRendered;
+                //mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
 
                 _mediaPlayerElement.SetMediaStreamSource(mss);
 
@@ -159,41 +160,67 @@ namespace Tello.Video.UWP
             }
         }
 
-        private void Mss_SwitchStreamsRequested(MediaStreamSource sender, MediaStreamSourceSwitchStreamsRequestedEventArgs args)
-        {
-            Debug.WriteLine("Mss_SwitchStreamsRequested");
-        }
+        //private void Mss_SwitchStreamsRequested(MediaStreamSource sender, MediaStreamSourceSwitchStreamsRequestedEventArgs args)
+        //{
+        //    //Debug.WriteLine("Mss_SwitchStreamsRequested");
+        //}
 
-        private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
-        {
-            Debug.WriteLine("Mss_SampleRendered");
-        }
+        //private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
+        //{
+        //    //Debug.WriteLine("Mss_SampleRendered");
+        //}
 
-        private void Mss_Closed(MediaStreamSource sender, MediaStreamSourceClosedEventArgs args)
-        {
-            Debug.WriteLine("Mss_Closed");
-        }
+        //private void Mss_Closed(MediaStreamSource sender, MediaStreamSourceClosedEventArgs args)
+        //{
+        //    //Debug.WriteLine("Mss_Closed");
+        //}
 
+        private MediaStreamSourceStartingRequestDeferral _startDeferral = null;
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             Debug.WriteLine("Mss_Starting");
+            if (!_dataReady)
+            {
+                _startDeferral = args.Request.GetDeferral();
+            }
         }
 
-        private DateTime? _started;
-        private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
+        private bool _dataReady = false;
+        private void _videoServer_DataReady(object sender, EventArgs e)
         {
-            Debug.WriteLine("Mss_SampleRequested");
-            args.Request.ReportSampleProgress(100);
+            Debug.WriteLine("data ready");
+            if (!_dataReady)
+            {
+                _dataReady = true;
+                if (_startDeferral != null)
+                {
+                    _startDeferral.Complete();
+                }
+            }
+        }
+
+        private Stopwatch _watch = new Stopwatch();
+        private DateTime? _started;
+
+        private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
+        {
+            _watch.Start();
             var sample = _videoServer.GetSample();
+            Debug.WriteLine($"get sample: {_watch.ElapsedMilliseconds}");
+            _watch.Restart();
             if (sample != null)
             {
+                args.Request.ReportSampleProgress(100);
                 if (!_started.HasValue)
                 {
                     _started = DateTime.Now;
                 }
-                args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.AsBuffer(), DateTime.Now - _started.Value);
-                var seconds = sample.Length * 8 / 3000000.0;
-                args.Request.Sample.Duration = TimeSpan.FromSeconds(seconds);
+                //args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.ToArray().AsBuffer(), DateTime.Now - _started.Value);
+                args.Request.Sample = await MediaStreamSample.CreateFromStreamAsync(sample.AsInputStream(), (uint)sample.Length, DateTime.Now - _started.Value);
+                Debug.WriteLine($"create media sample: {_watch.ElapsedMilliseconds}");
+
+                //var seconds = sample.Length * 8 / 3000000.0;
+                //args.Request.Sample.Duration = TimeSpan.FromSeconds(seconds);
             }
         }
     }

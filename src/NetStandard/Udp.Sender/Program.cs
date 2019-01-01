@@ -187,8 +187,9 @@ namespace Udp.Sender
         private static void Tello_ResponseReceivedTxt(object sender, ResponseReceivedArgs e)
         {
             var builder = new StringBuilder();
-            builder.Append("==========================================");
-            builder.AppendLine($"{DateTime.Now} - {e.Request.Id}::{e.Response.Id} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
+            builder.AppendLine("==========================================");
+            //builder.AppendLine($"{DateTime.Now} - {e.Request.Id}::{e.Response.Id} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
+            builder.AppendLine($"{DateTime.Now} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
             for (var i = 0; i < e.Response.Datagram.Length; ++i)
             {
                 if (i > 0 && i % 2 == 0)

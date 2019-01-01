@@ -46,6 +46,10 @@ namespace Udp.Sender
                         break;
                     }
 
+                    if (message.ToLower() == "d")
+                    {
+                        client.Disconnect();
+                    }
                     if (message.ToLower() == "c")
                     {
                         try
@@ -183,6 +187,7 @@ namespace Udp.Sender
         private static void Tello_ResponseReceivedTxt(object sender, ResponseReceivedArgs e)
         {
             var builder = new StringBuilder();
+            builder.Append("==========================================");
             builder.AppendLine($"{DateTime.Now} - {e.Request.Id}::{e.Response.Id} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
             for (var i = 0; i < e.Response.Datagram.Length; ++i)
             {
@@ -194,11 +199,11 @@ namespace Udp.Sender
                 builder.Append(e.Response.Datagram[i].ToString("X2"));
             }
             builder.AppendLine();
-            builder.Append("----------------------");
-            Console.WriteLine(builder.ToString());
-
+            builder.AppendLine("----------------------");
             var message = Encoding.UTF8.GetString(e.Response.Datagram);
-            Console.WriteLine($"message: {message}");
+            builder.AppendLine("message");
+            builder.AppendLine(message);
+            Console.WriteLine(builder.ToString());
 
             //var bytes = e.Response.Datagram;
             //var cmdId = (bytes[5] | (bytes[6] << 8));

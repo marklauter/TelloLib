@@ -135,6 +135,7 @@ namespace Tello.Video.UWP
                 _mediaInitialized = true;
 
                 var vep = VideoEncodingProperties.CreateH264();
+                vep.Bitrate = 3000000;
                 vep.Height = 720;
                 vep.Width = 960;
 
@@ -143,18 +144,24 @@ namespace Tello.Video.UWP
                 var mss = new MediaStreamSource(vsd)
                 {
                     IsLive = true,
-                    BufferTime = TimeSpan.FromMilliseconds(250)
+                    BufferTime = TimeSpan.FromSeconds(0)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
                 mss.Starting += Mss_Starting;
                 mss.Closed += Mss_Closed;
                 mss.SampleRendered += Mss_SampleRendered;
+                mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
 
                 _mediaPlayerElement.SetMediaStreamSource(mss);
 
                 Debug.WriteLine("media element initialized");
             }
+        }
+
+        private void Mss_SwitchStreamsRequested(MediaStreamSource sender, MediaStreamSourceSwitchStreamsRequestedEventArgs args)
+        {
+            Debug.WriteLine("Mss_SwitchStreamsRequested");
         }
 
         private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
@@ -185,7 +192,8 @@ namespace Tello.Video.UWP
                     _started = DateTime.Now;
                 }
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.AsBuffer(), DateTime.Now - _started.Value);
-                args.Request.ReportSampleProgress(100);
+                var seconds = sample.Length * 8 / 3000000.0;
+                args.Request.Sample.Duration = TimeSpan.FromSeconds(seconds);
             }
         }
     }

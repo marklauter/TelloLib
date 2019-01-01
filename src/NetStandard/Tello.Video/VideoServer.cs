@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -13,42 +14,40 @@ namespace Tello.Video
         {
         }
 
-        private readonly ReaderWriterLockSlim _gate = new ReaderWriterLockSlim();
+        private readonly ReaderWriterLockSlim _rungate = new ReaderWriterLockSlim();
         private bool _running = false;
         private bool Running
         {
             get
             {
                 var running = false;
-                _gate.EnterReadLock();
+                _rungate.EnterReadLock();
                 try
                 {
                     running = _running;
                 }
                 finally
                 {
-                    _gate.ExitReadLock();
+                    _rungate.ExitReadLock();
                 }
                 return running;
             }
             set
             {
-                _gate.EnterWriteLock();
+                _rungate.EnterWriteLock();
                 try
                 {
                     _running = value;
                 }
                 finally
                 {
-                    _gate.ExitWriteLock();
+                    _rungate.ExitWriteLock();
                 }
             }
         }
 
-        private readonly byte[][] _samples = new byte[Int16.MaxValue][];
-        private int _offset = 0;
-        private int _head = 0;
-        private int _tail = 0;
+        private readonly ConcurrentQueue<byte[]> _samples = new ConcurrentQueue<byte[]>();
+
 
         public async void Start(int port = 11111)
         {
@@ -65,49 +64,59 @@ namespace Tello.Video
             Running = false;
         }
 
+
         internal void Listen(int port)
         {
             var endPoint = new IPEndPoint(IPAddress.Any, 0);
             using (var client = new UdpClient(port))
             {
+                var index = -1;
+                var datagrams = new byte[24][];
                 Debug.WriteLine($"video server listening on port: {port}");
                 while (Running)
                 {
-                    var datagram = client.Receive(ref endPoint);
-                    Debug.WriteLine($"datagram received. len: {datagram.Length}, _tail: {_tail}");
-                    _gate.EnterWriteLock();
-                    try
+                    datagrams[++index] = client.Receive(ref endPoint);
+                    if (index == 23)
                     {
-                        _samples[_tail] = datagram;
-                        // mod keeps the tail from exceeding max array index
-                        _tail = (_tail + 1) % Int16.MaxValue;
-                        
-                    }
-                    finally
-                    {
-                        _gate.ExitWriteLock();
+                        index = -1;
+                        BuildSample(datagrams);
+                        datagrams = new byte[24][];
                     }
                 }
             }
         }
 
+        internal async void BuildSample(byte[][] datagrams)
+        {
+            await Task.Run(() =>
+            {
+                var size = 0;
+                for (var i = 0; i < datagrams.Length; ++i)
+                {
+                    size += datagrams[i].Length;
+                }
+
+                var buffer = new byte[size];
+                var offset = 0;
+                for (var i = 0; i < datagrams.Length; ++i)
+                {
+                    var datagram = datagrams[i];
+                    Array.Copy(datagram, 0, buffer, offset, datagram.Length);
+                    offset += datagram.Length;
+                }
+
+                _samples.Enqueue(buffer);
+                Debug.WriteLine($"sample built: {_samples.Count}");
+            });
+        }
+
         public byte[] GetSample()
         {
-            byte[] sample = null;
-            _gate.EnterReadLock();
-            try
+            if (_samples.TryDequeue(out var sample))
             {
-                sample = _samples[_head];
-                _samples[_head] = null;
-                _head = (_head + 1) % Int16.MaxValue;
+                return sample;
             }
-            finally
-            {
-                _gate.ExitReadLock();
-            }
-
-            Debug.WriteLine($"GetSample() returning sample {_head}");
-            return sample;
+            return null;
         }
     }
 }

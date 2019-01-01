@@ -99,14 +99,17 @@ namespace Tello.Udp
 
         private void OnReceive(IAsyncResult ar)
         {
-            if (!_isDisposed)
+            if (!_isDisposed && IsConnected)
             {
                 var state = (ReceiverState)ar.AsyncState;
-                var request = state.Request;
-                var endpoint = new IPEndPoint(IPAddress.Any, 0);
-                var response = new Response(state.Request.Id, state.Client.EndReceive(ar, ref endpoint));
+                if (state.Client != null && state.Client.Client != null)
+                {
+                    var request = state.Request;
+                    var endpoint = new IPEndPoint(IPAddress.Any, 0);
+                    var response = new Response(state.Request.Id, state.Client.EndReceive(ar, ref endpoint));
 
-                ResponseReceived?.Invoke(this, new ResponseReceivedArgs(endpoint, state.Request, response, state.SentTime));
+                    ResponseReceived?.Invoke(this, new ResponseReceivedArgs(endpoint, state.Request, response, state.SentTime));
+                }
             }
         }
 

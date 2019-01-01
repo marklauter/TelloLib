@@ -67,8 +67,8 @@ namespace Tello.Video
         }
 
         //private readonly ReaderWriterLockSlim _memgate = new ReaderWriterLockSlim();
-        private object _gate = new object();
-        private MemoryStream _stream = new MemoryStream();
+        private readonly object _gate = new object();
+        private MemoryStream _stream = null;
 
         private int _index = 0;
         //private readonly MemoryStream[] _samples = new MemoryStream[64];
@@ -89,16 +89,15 @@ namespace Tello.Video
                         _dataReady = true;
                         DataReady?.Invoke(this, EventArgs.Empty);
                     }
-                    _memgate.EnterReadLock();
-                    var stream = _samples[_index];
-                    _memgate.ExitReadLock();
-
-                    if (stream == null)
+                    lock (_gate)
                     {
-                        stream = CreateNewBufferStream();
+                        if (_stream == null)
+                        {
+                            _stream = new MemoryStream(1460 * 64);
+                        }
+                        _stream.Write(datagram, 0, datagram.Length);
                     }
-
-                    stream.Write(datagram, 0, datagram.Length);
+                    
                 }
             }
         }
@@ -129,30 +128,18 @@ namespace Tello.Video
 
         public MemoryStream GetSample()
         {
-            _memgate.EnterReadLock();
-            var index = _index;
-            var stream = _samples[_index];
-            _memgate.ExitReadLock();
-
-            _memgate.EnterWriteLock();
-            _samples[_index] = null;
-            _index = (_index + 1) % _samples.Length;
-            _memgate.ExitWriteLock();
+            MemoryStream stream = null;
+            lock (_gate)
+            {
+                stream = _stream;
+                _stream = null;
+            }
 
             if (stream != null)
             {
                 stream.Position = 0;
             }
 
-            return stream;
-        }
-
-        private MemoryStream CreateNewBufferStream()
-        {
-            var stream = new MemoryStream(1460 * 24);
-            _memgate.EnterWriteLock();
-            _samples[_index] = stream;
-            _memgate.ExitWriteLock();
             return stream;
         }
     }

@@ -201,7 +201,7 @@ namespace Tello.Video.UWP
 
         private Stopwatch _watch = new Stopwatch();
         private DateTime? _started;
-
+        private MediaStreamSourceSampleRequestDeferral _sampleDeferral = null;
         private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             _watch.Start();
@@ -221,6 +221,10 @@ namespace Tello.Video.UWP
 
                 //var seconds = sample.Length * 8 / 3000000.0;
                 //args.Request.Sample.Duration = TimeSpan.FromSeconds(seconds);
+            }
+            else
+            {
+                _sampleDeferral = args.Request.GetDeferral();
             }
         }
     }

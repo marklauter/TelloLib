@@ -73,7 +73,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
 
-                        Task.Delay(1000 * 5);
+                        Task.Delay(1000 * 10);
                         request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
                         {
                             UserData = 6

@@ -9,8 +9,32 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid>
-        <StackPanel BorderBrush="Black" BorderThickness="5">
-            <MediaElement x:Name="_mediaPlayerElement" AreTransportControlsEnabled="True" Height="720" Source="goodvideo.mp4" />
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Orientation="Horizontal" Grid.Row="0" BorderThickness="5" BorderBrush="DarkKhaki">
+            <Button x:Name="_connectButton" Content="connect" Click="_connectButton_Click"/>
+            <Button x:Name="_takeoffButton" Content="take off" Click="_takeoffButton_Click" />
+            <Button x:Name="_landButton" Content="land" Click="_landButton_Click"/>
+            <Button x:Name="_startVideoButton" Content="start video" Click="_startVideoButton_Click"/>
+            <Button x:Name="_stopVideoButton" Content="stop video" Click="_stopVideoButton_Click"/>
+            <Button x:Name="_checkBatteryButton" Content="chk batt" Click="_checkBatteryButton_Click"/>
+        </StackPanel>
+        
+        <StackPanel Orientation="Horizontal" Grid.Row="1" BorderThickness="5" BorderBrush="DarkKhaki">
+            <TextBlock x:Name="_telloStateText"/>
+        </StackPanel>
+      
+        <StackPanel Grid.Row="2" BorderThickness="5" BorderBrush="DarkKhaki">
+            <ListView x:Name="_commandResponseListView" Height="300" Background="Beige" />
+        </StackPanel>
+        
+        <StackPanel Grid.Row="3" BorderThickness="5" BorderBrush="DarkKhaki">
+            <MediaElement x:Name="_mediaElement" AreTransportControlsEnabled="True" Height="360" Source="goodvideo.mp4" AutoPlay="False"/>
         </StackPanel>
     </Grid>
 </Page>

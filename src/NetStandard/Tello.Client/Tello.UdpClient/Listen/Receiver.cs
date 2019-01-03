@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Tello.Udp
 {
-    public class Receiver
+    public class Receiver 
     {
         public Receiver(int port) : base()
         {
@@ -17,21 +17,21 @@ namespace Tello.Udp
         public int Port { get; }
 
         private bool _receiving = false;
-        public async void BeginReceiving()
+        public async void Start()
         {
             if (!_receiving)
             {
                 _receiving = true;
-                await Listen();
+                await Task.Run(() => { Listen(); });
             }
         }
 
-        public void EndReceiving()
+        public void Stop()
         {
             _receiving = false;
         }
 
-        private async Task Listen()
+        private async void Listen()
         {
             var endPoint = new IPEndPoint(IPAddress.Any, 0);
             using (var client = new UdpClient(Port))
@@ -41,6 +41,7 @@ namespace Tello.Udp
                     var receiveResult = await client.ReceiveAsync();
                     var eventArgs = new ReceiverDatagramArgs(receiveResult.Buffer, receiveResult.RemoteEndPoint);
                     DatagramReceived?.Invoke(this, eventArgs);
+                    await Task.Yield();
                 }
             }
         }

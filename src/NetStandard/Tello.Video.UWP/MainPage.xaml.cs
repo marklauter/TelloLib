@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
-using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -53,21 +52,17 @@ namespace Tello.Video.UWP
 
             _tello.ResponseReceived += _tello_ResponseReceived;
 
-            _videoServer.DataReady += _videoServer_DataReady;
-            _videoServer.Start(11111);
+            //_videoServer.DataReady += _videoServer_DataReady;
+            _videoServer.Start();
         }
         #endregion
 
         #region video
-        private readonly VideoServer _videoServer = new VideoServer();
+        private readonly VideoServer _videoServer = new VideoServer(11111);
 
-        //using(var file = File.OpenRead("tello.mp4"))
-        //{
-        //    _fullvideo = new byte[file.Length];
-        //    file.Read(_fullvideo, 0, (int)file.Length);
-        //}
         //private byte[] _fullvideo;
 
+        
         private bool _videoInitialized = false;
         private void InitializeVideo()
         {
@@ -75,8 +70,20 @@ namespace Tello.Video.UWP
             {
                 _videoInitialized = true;
 
+                //using (var file = File.OpenRead("tello.mp4"))
+                //{
+                //    _fullvideo = new byte[file.Length];
+                //    file.Read(_fullvideo, 0, (int)file.Length);
+                //    _dataReady = true;
+                //}
+
+                //var file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///AppData/goodvideo.mp4", UriKind.RelativeOrAbsolute));
+                //var clip = await MediaClip.CreateFromFileAsync(file);
+                //var videoEncodingProperties = clip.GetVideoEncodingProperties();
+
                 var vep = VideoEncodingProperties.CreateH264();
-                //vep.Bitrate = 3000000;
+                //2352698.5700033255736614566012637
+                //vep.Bitrate = 2350000;
                 vep.Height = 720;
                 vep.Width = 960;
 
@@ -85,7 +92,7 @@ namespace Tello.Video.UWP
                 var mss = new MediaStreamSource(vsd)
                 {
                     IsLive = true,
-                    //BufferTime = TimeSpan.FromMilliseconds(250)
+                    //BufferTime = TimeSpan.FromMilliseconds(100)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
@@ -113,66 +120,49 @@ namespace Tello.Video.UWP
         private void Mss_Closed(MediaStreamSource sender, MediaStreamSourceClosedEventArgs args)
         {
             Debug.WriteLine("Mss_Closed");
-            _dataReady = false;
+            //_dataReady = false;
         }
 
-        private MediaStreamSourceStartingRequestDeferral _startDeferral = null;
+        //private MediaStreamSourceStartingRequestDeferral _startDeferral = null;
         private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             Debug.WriteLine("Mss_Starting");
-            if (!_dataReady)
-            {
-                Debug.WriteLine("start deferred");
-                _startDeferral = args.Request.GetDeferral();
-            }
-            if (_sampleDeferral != null)
-            {
-                _sampleDeferral.Complete();
-                _sampleDeferral = null;
-            }
+            //if (!_dataReady)
+            //{
+            //    Debug.WriteLine("start deferred");
+            //    _startDeferral = args.Request.GetDeferral();
+            //}
         }
 
-        private bool _dataReady = false;
-        private void _videoServer_DataReady(object sender, EventArgs e)
-        {
-            if (!_dataReady)
-            {
-                Debug.WriteLine("data ready");
-                _started = DateTime.Now;
-                _dataReady = true;
-                if (_startDeferral != null)
-                {
-                    Debug.WriteLine("start continued");
-                    _startDeferral.Complete();
-                    _startDeferral = null;
-                }
-            }
+        //private bool _dataReady = false;
+        //private void _videoServer_DataReady(object sender, EventArgs e)
+        //{
+        //    if (!_dataReady)
+        //    {
+        //        Debug.WriteLine("data ready");
+        //        _dataReady = true;
+        //        if (_startDeferral != null)
+        //        {
+        //            Debug.WriteLine("start continued");
+        //            _startDeferral.Complete();
+        //            _startDeferral = null;
+        //        }
+        //    }
 
-            if (_sampleDeferral != null)
-            {
-                Debug.WriteLine("sample continued");
-                _sampleDeferral.Complete();
-                _sampleDeferral = null;
-            }
-        }
+        //    if (_sampleDeferral != null)
+        //    {
+        //        Debug.WriteLine("sample continued");
+        //        _sampleDeferral.Complete();
+        //        _sampleDeferral = null;
+        //    }
+        //}
 
-        private DateTime? _started;
-        private MediaStreamSourceSampleRequestDeferral _sampleDeferral = null;
-        private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
+        private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
-            var sample = _videoServer.GetSample();
-            if (sample != null)
-            {
-                args.Request.ReportSampleProgress(100);
-                args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.AsBuffer(), DateTime.Now - _started.Value);
-            }
-            else
-            {
-                Debug.WriteLine("sample deferred 1");
-                _sampleDeferral = args.Request.GetDeferral();
-                args.Request.ReportSampleProgress(0);
-                Debug.WriteLine("sample deferred 2 <<<<<<<<<<<<<<<");
-            }
+            //args.Request.Sample = MediaStreamSample.CreateFromBuffer(_fullvideo.AsBuffer(), DateTime.Now - _started.Value);
+            var frame = await _videoServer.ReadFrameAsync(args.Request);
+            args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
+            args.Request.Sample.Duration = VideoFrame.DurationPerFrame;
         }
         #endregion
 
@@ -236,19 +226,19 @@ namespace Tello.Video.UWP
             _tello.Send(request);
         }
 
-        private async void _startVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private void _startVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "sending 'streamon' (start video) command");
             var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false);
             _tello.Send(request);
 
-            await Task.Delay(TimeSpan.FromSeconds(1));
             _mediaElement.Play();
         }
 
         private void _stopVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _mediaElement.Stop();
+
             _telloCommandReponse.Insert(0, "sending 'streamon' (stop video) command");
             var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false);
             _tello.Send(request);

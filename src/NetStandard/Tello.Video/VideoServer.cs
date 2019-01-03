@@ -13,7 +13,7 @@ using Windows.Media.Core;
 
 namespace Tello.Video
 {
-    public class VideoServer
+    public sealed class VideoServer
     {
         private readonly int _port;
         public VideoServer(int port = 11111)
@@ -23,27 +23,30 @@ namespace Tello.Video
 
         #region controls
         private bool _running = false;
-
         public async void Start()
         {
             Debug.WriteLine($"video server starting on port: {_port}");
             if (!_running)
             {
                 _running = true;
+                _frameComposer.Start();
                 await Task.Run(() => { Listen(); });
             }
         }
 
         public void Stop()
         {
-            _running = false;
+            _frameComposer.Stop();
             Debug.WriteLine($"video server on port {_port} stopped");
+            _running = false;
         }
         #endregion
 
         private FrameComposer _frameComposer = new FrameComposer();
 
-        internal void Listen()
+        public bool DataReady => _frameComposer.FramesReady;
+
+        internal async void Listen()
         {
             var endPoint = new IPEndPoint(IPAddress.Any, 0);
             using (var client = new UdpClient(_port))
@@ -52,19 +55,43 @@ namespace Tello.Video
                 while (_running)
                 {
                     _frameComposer.AddSample(client.Receive(ref endPoint));
+                    await Task.Yield();
                 }
             }
         }
 
-        public async Task<VideoFrame> ReadSampleAsync(MediaStreamSourceSampleRequest request)
+        public VideoFrame ReadVideoFrame(MediaStreamSourceSampleRequest request)
         {
-            // try reading 10 samples at a time
-            //var sample = new VideoSample(await _frameComposer.ReadFrameAsync(request));
-            //for (var i=0;i<9; ++i)
-            //{
-            //    sample.AddFrame(await _frameComposer.ReadFrameAsync(request));
-            //}
-            return _frameComposer.ReadFrameAsync(request);
+            return _frameComposer.ReadFrame(request);
+        }
+
+        public VideoSample ReadSample(MediaStreamSourceSampleRequest request)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            VideoSample sample = null;
+            Debug.WriteLine("request.GetDeferral()");
+            var deferral = request.GetDeferral();
+            try
+            {
+                sample = new VideoSample(_frameComposer.ReadFrame(request));
+                for (var i = 0; i < 4; ++i)
+                {
+                    var progress = (uint)((i + 1) / 5.0 * 100);
+                    request.ReportSampleProgress(progress);
+                    Debug.WriteLine($"{DateTime.Now}: request.ReportSampleProgress({progress})");
+                    sample.AddFrame(_frameComposer.ReadFrame(request));
+                }
+            }
+            finally
+            {
+                Debug.WriteLine("deferral.Complete()");
+                deferral.Complete();
+            }
+            request.ReportSampleProgress(100);
+            Debug.WriteLine($"ReadSampleAsync took {stopwatch.ElapsedMilliseconds}ms");
+            return sample;
         }
     }
 
@@ -73,6 +100,7 @@ namespace Tello.Video
         public VideoSample(VideoFrame frame)
         {
             TimeIndex = frame.TimeIndex;
+            Debug.WriteLine($"new video sample: {TimeIndex}");
             AddFrame(frame);
         }
 
@@ -82,6 +110,7 @@ namespace Tello.Video
             _sample.Write(frame.Content, 0, frame.Size);
             Duration += VideoFrame.DurationPerFrame;
             Size += frame.Size;
+            Debug.WriteLine($"frame added: {frame}");
         }
 
         private MemoryStream _sample = new MemoryStream();

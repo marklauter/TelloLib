@@ -89,13 +89,13 @@ namespace Tello.Video.UWP
                 var mss = new MediaStreamSource(vsd)
                 {
                     IsLive = true,
-                    //BufferTime = TimeSpan.FromMilliseconds(333.33) // approximately 10 frames
+                    BufferTime = TimeSpan.FromSeconds(2)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
                 mss.Starting += Mss_Starting;
                 mss.Closed += Mss_Closed;
-                mss.SampleRendered += Mss_SampleRendered;
+                //mss.SampleRendered += Mss_SampleRendered;
                 //mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
 
                 _mediaElement.SetMediaStreamSource(mss);
@@ -105,15 +105,15 @@ namespace Tello.Video.UWP
             }
         }
 
-        private long _lagTest = 0;
-        private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
-        {
-            ++_lagTest;
-            if (_lagTest % 30 == 0)
-            {
-                Debug.WriteLine($"sample lag: {args.SampleLag}");
-            }
-        }
+        //private long _lagTest = 0;
+        //private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
+        //{
+        //    ++_lagTest;
+        //    if (_lagTest % 30 == 0)
+        //    {
+        //        Debug.WriteLine($"sample lag: {args.SampleLag}");
+        //    }
+        //}
 
         //private void Mss_SwitchStreamsRequested(MediaStreamSource sender, MediaStreamSourceSwitchStreamsRequestedEventArgs args)
         //{
@@ -131,7 +131,6 @@ namespace Tello.Video.UWP
             //_dataReady = false;
         }
 
-        //private MediaStreamSourceStartingRequestDeferral _startDeferral = null;
         private async void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
             var stopwatch = new Stopwatch();
@@ -154,41 +153,27 @@ namespace Tello.Video.UWP
             Debug.WriteLine($"{stopwatch.ElapsedMilliseconds}ms media player started");
         }
 
-        //private bool _dataReady = false;
-        //private void _videoServer_DataReady(object sender, EventArgs e)
-        //{
-        //    if (!_dataReady)
-        //    {
-        //        Debug.WriteLine("data ready");
-        //        _dataReady = true;
-        //        if (_startDeferral != null)
-        //        {
-        //            Debug.WriteLine("start continued");
-        //            _startDeferral.Complete();
-        //            _startDeferral = null;
-        //        }
-        //    }
-
-        //    if (_sampleDeferral != null)
-        //    {
-        //        Debug.WriteLine("sample continued");
-        //        _sampleDeferral.Complete();
-        //        _sampleDeferral = null;
-        //    }
-        //}
-
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             //args.Request.Sample = MediaStreamSample.CreateFromBuffer(_fullvideo.AsBuffer(), DateTime.Now - _started.Value);
 
-            //var sample = await _videoServer.ReadSampleAsync(args.Request);
-            //args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
-            //args.Request.Sample.Duration = sample.Duration;
-
             Debug.Write("+");
-            var frame = _videoServer.ReadVideoFrame(args.Request);
-            args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
-            args.Request.Sample.Duration = VideoFrame.DurationPerFrame;
+
+            // this creates a buffer delay of ~ 5 to 10 seconds
+            //var sample = _videoServer.ReadSample(args.Request);
+            //if (sample != null)
+            //{
+            //    args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
+            //    args.Request.Sample.Duration = sample.Duration;
+            //}
+
+            // this creates a buffer delay of ~ 2 to 3 seconds
+            var frame = _videoServer.ReadVideoFrame();
+            if (frame != null)
+            {
+                args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
+                args.Request.Sample.Duration = VideoFrame.DurationPerFrame;
+            }
             Debug.Write("-");
         }
         #endregion

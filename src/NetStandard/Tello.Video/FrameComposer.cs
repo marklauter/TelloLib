@@ -2,9 +2,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
-using Windows.Media.Core;
 
 namespace Tello.Video
 {
@@ -16,7 +14,7 @@ namespace Tello.Video
             Index = frameIndex;
             FramesPerSecond = fps;
             Size = content.Length;
-            TimeIndex = TimeSpan.FromSeconds(frameIndex * DurationPerFrame.TotalSeconds);
+            TimeIndex = TimeSpan.FromSeconds(frameIndex / 30.0);
             TtlBytesProcessed = ttlBytesProcessed;
         }
 
@@ -31,12 +29,13 @@ namespace Tello.Video
 
         public override string ToString()
         {
-            return $"{TimeIndex}: #{Index}, {FramesPerSecond}/s, {Size}b";
+            return $"{TimeIndex}: #{Index}, {(int)FramesPerSecond}f/s, {Size.ToString("#,#")}B, {((uint)(TtlBytesProcessed * 8 / TimeIndex.TotalSeconds)).ToString("#,#")}b/s";
         }
     }
 
     public sealed class FrameComposer
     {
+        #region controls
         private bool _running = false;
         public async void Start()
         {
@@ -46,16 +45,16 @@ namespace Tello.Video
                 await Task.Run(() => { ComposeFrames(); });
             }
         }
-
         public void Stop()
         {
             _running = false;
         }
+        #endregion
 
+        #region queues
         private readonly ConcurrentQueue<byte[]> _inputSamples = new ConcurrentQueue<byte[]>();
         private readonly ConcurrentQueue<VideoFrame> _outputFrames = new ConcurrentQueue<VideoFrame>();
-
-        //private int _progress = 0;
+        #endregion
 
         public bool FramesReady { get; private set; }
 
@@ -90,7 +89,7 @@ namespace Tello.Video
                             // write a frame sample to debug output ~ every second so we can see how we're doing with performance
                             if (frameIndex % 30 == 0)
                             {
-                                Debug.WriteLine(frame);
+                                Debug.WriteLine($"\nkeyframe: {frame}");
                             }
                         }
                         frameStream = new MemoryStream(1024 * 16);
@@ -100,7 +99,6 @@ namespace Tello.Video
                     {
                         frameStream.Write(sample, 0, sample.Length);
                         byteCount += sample.Length;
-                        //Interlocked.Exchange(ref _progress, (int)(frameStream.Length / frameStream.Capacity * 100));
                     }
                 }
             }
@@ -111,41 +109,23 @@ namespace Tello.Video
             _inputSamples.Enqueue(sample);
         }
 
-        public VideoFrame ReadFrame(MediaStreamSourceSampleRequest request)
+        public VideoFrame ReadFrame()
         {
             Stopwatch stopwatch = null;
             VideoFrame frame = null;
-            var waited = _outputFrames.IsEmpty;
-            var timedout = false;
-            while (!timedout && !_outputFrames.TryDequeue(out frame))
+            while (!_outputFrames.TryDequeue(out frame))
             {
-                //Debug.Write(".");
                 if (stopwatch == null)
                 {
                     stopwatch = new Stopwatch();
                     stopwatch.Start();
                 }
 
-                var ms = stopwatch.Elapsed.Milliseconds;
-                
-                if (ms > 0 && ms % 100 == 0)
-                {
-                    //var progress = 0;
-                    //Interlocked.Exchange(ref progress, _progress);
-                    //request.ReportSampleProgress((uint)progress);
-                    //Debug.Write($"progress? {_progress} ");
-                    stopwatch.Restart();
-                }
-
                 if (stopwatch.ElapsedMilliseconds > 5000)
                 {
-                    timedout = true;
+                    Debug.WriteLine("ReadFrame timed out");
+                    break;
                 }
-            }
-
-            if (waited)
-            {
-                Debug.WriteLine($"waited for frames: {stopwatch.ElapsedMilliseconds}ms");
             }
 
             return frame;

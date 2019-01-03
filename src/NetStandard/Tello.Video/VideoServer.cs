@@ -60,9 +60,9 @@ namespace Tello.Video
             }
         }
 
-        public VideoFrame ReadVideoFrame(MediaStreamSourceSampleRequest request)
+        public VideoFrame ReadVideoFrame()
         {
-            return _frameComposer.ReadFrame(request);
+            return _frameComposer.ReadFrame();
         }
 
         public VideoSample ReadSample(MediaStreamSourceSampleRequest request)
@@ -70,27 +70,29 @@ namespace Tello.Video
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            VideoSample sample = null;
-            Debug.WriteLine("request.GetDeferral()");
-            var deferral = request.GetDeferral();
-            try
+            var frame = _frameComposer.ReadFrame();
+            if (frame == null)
             {
-                sample = new VideoSample(_frameComposer.ReadFrame(request));
-                for (var i = 0; i < 4; ++i)
-                {
-                    var progress = (uint)((i + 1) / 5.0 * 100);
-                    request.ReportSampleProgress(progress);
-                    Debug.WriteLine($"{DateTime.Now}: request.ReportSampleProgress({progress})");
-                    sample.AddFrame(_frameComposer.ReadFrame(request));
-                }
+                return null;
             }
-            finally
+
+            var sample = new VideoSample(frame);
+            for (var i = 0; i < 4; ++i)
             {
-                Debug.WriteLine("deferral.Complete()");
-                deferral.Complete();
+                frame = _frameComposer.ReadFrame();
+                if (frame == null)
+                {
+                    break;
+                }
+                sample.AddFrame(frame);
+                var progress = (uint)((i + 1) / 5 * 100);
+                request.ReportSampleProgress(progress);
             }
             request.ReportSampleProgress(100);
-            Debug.WriteLine($"ReadSampleAsync took {stopwatch.ElapsedMilliseconds}ms");
+            if (stopwatch.ElapsedMilliseconds > sample.Duration.TotalMilliseconds)
+            {
+                Debug.WriteLine($"ReadSample: took too long! {stopwatch.ElapsedMilliseconds}ms, sample.duration {sample.Duration.TotalMilliseconds}ms");
+            }
             return sample;
         }
     }
@@ -100,7 +102,6 @@ namespace Tello.Video
         public VideoSample(VideoFrame frame)
         {
             TimeIndex = frame.TimeIndex;
-            Debug.WriteLine($"new video sample: {TimeIndex}");
             AddFrame(frame);
         }
 
@@ -110,7 +111,6 @@ namespace Tello.Video
             _sample.Write(frame.Content, 0, frame.Size);
             Duration += VideoFrame.DurationPerFrame;
             Size += frame.Size;
-            Debug.WriteLine($"frame added: {frame}");
         }
 
         private MemoryStream _sample = new MemoryStream();

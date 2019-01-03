@@ -1,5 +1,6 @@
 ﻿using Sumo.Retry;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -37,21 +38,29 @@ namespace Tello.Udp
                 return;
             }
 
-            await WithRetry.InvokeAsync(_connectionRetryPolicy, () =>
-            {
-                if (!IsNetworkAvailable)
-                {
-                    throw new NetworkUnavailableException();
-                }
-
-                _client = new UdpClient
-                {
-                    ExclusiveAddressUse = false
-                };
-                _client.Connect(_endPoint);
-            });
             IsConnected = true;
-            Connected?.Invoke(this, EventArgs.Empty);
+            try
+            {
+                await WithRetry.InvokeAsync(_connectionRetryPolicy, () =>
+                {
+                    if (!IsNetworkAvailable)
+                    {
+                        throw new NetworkUnavailableException();
+                    }
+
+                    _client = new UdpClient();
+                //{
+                //    ExclusiveAddressUse = false
+                //};
+                _client.Connect(_endPoint);
+                });
+                Connected?.Invoke(this, EventArgs.Empty);
+            }
+            catch
+            {
+                IsConnected = false;
+                throw;
+            }
         }
 
         public void Disconnect()
@@ -89,7 +98,7 @@ namespace Tello.Udp
 
         public async void Send(Request request)
         {
-            if (_client != null)
+            if (_client != null && IsConnected)
             {
                 var state = new ReceiverState(_client, _endPoint, request, DateTime.Now);
                 await _client.SendAsync(request.Datagram, request.Datagram.Length);
@@ -99,6 +108,8 @@ namespace Tello.Udp
 
         private void OnReceive(IAsyncResult ar)
         {
+            Debug.WriteLine($"data received. socket connected {_client.Client.Connected}, transceiver connected {IsConnected}");
+           
             if (!_isDisposed && IsConnected)
             {
                 var state = (ReceiverState)ar.AsyncState;

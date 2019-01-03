@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
+using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;

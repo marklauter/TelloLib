@@ -127,7 +127,6 @@ namespace Tello.Video
                     break;
                 }
             }
-
             return frame;
         }
     }

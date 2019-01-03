@@ -33,7 +33,7 @@ namespace Udp.Listener
 
             var videoReceiver = new Receiver(11111);
             videoReceiver.DatagramReceived += VideoReceiver_DatagramReceived;
-            videoReceiver.BeginReceiving();
+            videoReceiver.Start();
             Console.WriteLine($"listening on port 11111");
             Console.WriteLine("==============================================");
             Console.WriteLine("press any key to stop");
@@ -47,7 +47,7 @@ namespace Udp.Listener
 
             //while (true)
             //{
-            //    Task.Yield();
+            //    await Task.Yield();
             //}
         }
 

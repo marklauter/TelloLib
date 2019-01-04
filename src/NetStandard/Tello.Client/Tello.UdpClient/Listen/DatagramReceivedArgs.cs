@@ -3,9 +3,9 @@ using System.Net;
 
 namespace Tello.Udp
 {
-    public class ReceiverDatagramArgs : EventArgs
+    public class DatagramReceivedArgs : EventArgs
     {
-        public ReceiverDatagramArgs(byte[] datagram, IPEndPoint remoteEndpoint)
+        public DatagramReceivedArgs(byte[] datagram, IPEndPoint remoteEndpoint)
         {
             Datagram = datagram;
             RemoteEndpoint = remoteEndpoint;

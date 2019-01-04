@@ -1,5 +1,6 @@
 ﻿using Sumo.Retry;
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -25,8 +26,8 @@ namespace Tello.Udp
         private readonly IPEndPoint _endPoint;
         private UdpClient _client = null;
 
-        public event EventHandler Connected;
-        public event EventHandler Disconnected;
+        public event EventHandler OnConnect;
+        public event EventHandler OnDisconnect;
         public event EventHandler<ResponseReceivedArgs> ResponseReceived;
         public string Destination { get; }
 
@@ -44,6 +45,7 @@ namespace Tello.Udp
                 {
                     if (!IsNetworkAvailable)
                     {
+                        Debug.WriteLine("NetworkUnavailableException");
                         throw new NetworkUnavailableException();
                     }
 
@@ -53,11 +55,12 @@ namespace Tello.Udp
                     //};
                     _client.Connect(_endPoint);
                 });
-                Connected?.Invoke(this, EventArgs.Empty);
+                OnConnect?.Invoke(this, EventArgs.Empty);
             }
-            catch
+            catch(Exception ex)
             {
                 IsConnected = false;
+                Debug.WriteLine(ex);
                 throw;
             }
         }
@@ -73,7 +76,7 @@ namespace Tello.Udp
                     _client = null;
                 }
                 IsConnected = false;
-                Disconnected?.Invoke(this, EventArgs.Empty);
+                OnDisconnect?.Invoke(this, EventArgs.Empty);
             }
         }
 
@@ -82,17 +85,17 @@ namespace Tello.Udp
 
         private class ReceiverState
         {
-            public ReceiverState(UdpClient client, IPEndPoint endPoint, Request request, DateTime sentTime)
+            internal ReceiverState(UdpClient client, IPEndPoint endPoint, Request request, DateTime sentTime)
             {
                 Client = client ?? throw new ArgumentNullException(nameof(client));
                 EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
                 Request = request ?? throw new ArgumentNullException(nameof(request));
             }
 
-            public UdpClient Client { get; }
-            public IPEndPoint EndPoint { get; }
-            public DateTime SentTime { get; }
-            public Request Request { get; }
+            internal UdpClient Client { get; }
+            internal IPEndPoint EndPoint { get; }
+            internal DateTime SentTime { get; }
+            internal Request Request { get; }
         }
 
         public async void Send(Request request)

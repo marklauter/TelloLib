@@ -31,7 +31,7 @@ namespace Udp.Listener
         //    stateReceiver.BeginReceiving();
         //    Console.WriteLine($"listening on port 8890");
 
-            var videoReceiver = new Receiver(11111);
+            var videoReceiver = new UdpReceiver(11111);
             videoReceiver.DatagramReceived += VideoReceiver_DatagramReceived;
             videoReceiver.Start();
             Console.WriteLine($"listening on port 11111");
@@ -51,7 +51,7 @@ namespace Udp.Listener
             //}
         }
 
-        private static void StateReceiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
+        private static void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
             Console.WriteLine($"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}");
         }
@@ -61,7 +61,7 @@ namespace Udp.Listener
         private static ulong _ttlSize = 0;
         private static long _size = 0;
         private static FileStream _stream;
-        private static void VideoReceiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
+        private static void VideoReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
             try
             {

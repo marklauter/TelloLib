@@ -41,7 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2400000, TimeSpan.FromSeconds(30), 1460, 11111);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2400000, TimeSpan.FromSeconds(10), 1460, 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -51,14 +51,14 @@ namespace Tello.Video.UWP
                 _videoInitialized = true;
 
                 var vep = VideoEncodingProperties.CreateH264();
-                vep.Bitrate = 2400000;
+                //vep.Bitrate = 2400000;
                 vep.Height = 720;
                 vep.Width = 960;
 
                 var mss = new MediaStreamSource(new VideoStreamDescriptor(vep))
                 {
                     IsLive = true,
-                    BufferTime = TimeSpan.FromSeconds(2)
+                    BufferTime = TimeSpan.FromSeconds(0.0)
                 };
 
                 mss.SampleRequested += Mss_SampleRequested;
@@ -69,7 +69,7 @@ namespace Tello.Video.UWP
 
                 _mediaElement.SetMediaStreamSource(mss);
                 _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
-                //_mediaElement.RealTimePlayback = true;
+                _mediaElement.RealTimePlayback = true;
 
                 _frameServer.FrameReady += _frameServer_FrameReady;
 
@@ -140,6 +140,7 @@ namespace Tello.Video.UWP
             // this creates a buffer delay of ~ 2 to 3 seconds
             if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
             {
+                Debug.Write(".");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
                 args.Request.Sample.Duration = frame.Duration;
             }

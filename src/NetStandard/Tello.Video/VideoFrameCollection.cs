@@ -20,7 +20,6 @@ namespace Tello.Video
             Size += frame.Size;
         }
 
-
         private readonly List<VideoFrame> _frames = new List<VideoFrame>();
         private readonly MemoryStream _sample = new MemoryStream();
 

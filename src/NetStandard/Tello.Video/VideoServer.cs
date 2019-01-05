@@ -60,8 +60,7 @@ namespace Tello.Video
         public bool TryGetSample(out byte[] sample, TimeSpan timeout)
         {
             var spin = new SpinWait();
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+            var stopwatch = Stopwatch.StartNew();
             while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
             {
                 spin.SpinOnce();

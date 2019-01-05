@@ -2,8 +2,6 @@
 
 namespace Tello.Video
 {
-    //https://stackoverflow.com/questions/590069/how-would-you-code-an-efficient-circular-buffer-in-java-or-c-sharp
-    //todo: make threadsafe
     internal class RingBuffer<T>
     {
         public RingBuffer(int size)

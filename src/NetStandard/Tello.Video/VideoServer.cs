@@ -1,123 +1,91 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
-using Windows.Media.Core;
-
-//todo: create tello video emulator
-//todo: try feeding individual frames to getsample
-//todo: try timing the UDP speed
+using Tello.Udp;
 
 namespace Tello.Video
 {
-    public sealed class VideoServer
+    public class SampleReadyArgs
     {
-        private readonly int _port;
-        public VideoServer(int port = 11111)
+        public SampleReadyArgs(byte[] sample)
         {
-            _port = port;
+            Sample = sample;
         }
 
-        #region controls
-        private bool _running = false;
-        public async void Start()
+        public byte[] Sample { get; }
+    }
+
+    public sealed class VideoServer
+    {
+        // 1k buffer stores 1k samples
+        public VideoServer(int port = 11111, int bufferSize = 1024)
         {
-            Debug.WriteLine($"video server starting on port: {_port}");
-            if (!_running)
-            {
-                _running = true;
-                _frameComposer.Start();
-                await Task.Run(() => { Listen(); });
-            }
+            _samples = new RingBuffer<byte[]>(bufferSize);
+            _udpReceiver = new UdpReceiver(port);
+            _udpReceiver.OnDatagramReceived += _udpReceiver_DatagramReceived;
+        }
+
+        public event EventHandler<SampleReadyArgs> SampleReady;
+        private readonly UdpReceiver _udpReceiver;
+        private readonly RingBuffer<byte[]> _samples;
+
+        public void Start()
+        {
+            _udpReceiver.Start();
         }
 
         public void Stop()
         {
-            _frameComposer.Stop();
-            Debug.WriteLine($"video server on port {_port} stopped");
-            _running = false;
+            _udpReceiver.Stop();
         }
-        #endregion
 
-        private FrameComposer _frameComposer = new FrameComposer();
-
-        public bool DataReady => _frameComposer.FramesReady;
-
-        internal async void Listen()
+        private void _udpReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
-            var endPoint = new IPEndPoint(IPAddress.Any, 0);
-            using (var client = new UdpClient(_port))
+            _samples.Push(e.Datagram);
+            SampleReady?.Invoke(this, new SampleReadyArgs(e.Datagram));
+        }
+
+        /// <summary>
+        /// Reads a sample from buffer. Returns null if timeout or empty buffer
+        /// </summary>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public Task<byte[]> GetSampleAsync(TimeSpan timeout)
+        {
+            return Task.Run(() =>
             {
-                Debug.WriteLine($"video server listening on port: {_port}");
-                while (_running)
+                byte[] sample = null;
+                var spin = new SpinWait();
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
                 {
-                    _frameComposer.AddSample(client.Receive(ref endPoint));
-                    await Task.Yield();
+                    spin.SpinOnce();
                 }
-            }
+                return sample;
+            });
         }
 
-        public VideoFrame ReadVideoFrame()
+        /// <summary>
+        /// Attempts to read count samples before timeout
+        /// </summary>
+        /// <param name="count"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public Task<byte[][]> GetSamplesAsync(int count, TimeSpan timeout)
         {
-            return _frameComposer.ReadFrame();
-        }
-
-        public VideoSample ReadSample(MediaStreamSourceSampleRequest request)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            var frame = _frameComposer.ReadFrame();
-            if (frame == null)
+            return Task.Run(async () =>
             {
-                return null;
-            }
-
-            var sample = new VideoSample(frame);
-            for (var i = 0; i < 4; ++i)
-            {
-                frame = _frameComposer.ReadFrame();
-                if (frame == null)
+                var samples = new byte[count][];
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                for (var i = 0; i < count; ++i)
                 {
-                    break;
+                    samples[i] = await GetSampleAsync(stopwatch.Elapsed - timeout);
                 }
-                sample.AddFrame(frame);
-                var progress = (uint)((i + 1) / 5 * 100);
-                request.ReportSampleProgress(progress);
-            }
-            request.ReportSampleProgress(100);
-            if (stopwatch.ElapsedMilliseconds > sample.Duration.TotalMilliseconds)
-            {
-                Debug.WriteLine($"ReadSample: took too long! {stopwatch.ElapsedMilliseconds}ms, sample.duration {sample.Duration.TotalMilliseconds}ms");
-            }
-            return sample;
+                return samples;
+            });
         }
-    }
-
-    public sealed class VideoSample
-    {
-        public VideoSample(VideoFrame frame)
-        {
-            TimeIndex = frame.TimeIndex;
-            AddFrame(frame);
-        }
-
-        public void AddFrame(VideoFrame frame)
-        {
-            Frames.Add(frame);
-            _sample.Write(frame.Content, 0, frame.Size);
-            Duration += VideoFrame.DurationPerFrame;
-            Size += frame.Size;
-        }
-
-        private MemoryStream _sample = new MemoryStream();
-        public byte[] Content => _sample.ToArray();
-        public TimeSpan Duration { get; private set; } = TimeSpan.FromSeconds(0.0);
-        public List<VideoFrame> Frames { get; } = new List<VideoFrame>();
-        public long Size { get; private set; } = 0;
-        public TimeSpan TimeIndex { get; }
     }
 }

@@ -16,9 +16,9 @@ namespace Tello.Video
         public VideoFrame Frame { get; }
     }
 
-    public sealed class FrameComposer
+    internal sealed class FrameComposer
     {
-        public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample = 1460)
+        public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample)
         {
             _frameRate = frameRate;
             _bitRate = bitRate;
@@ -105,11 +105,6 @@ namespace Tello.Video
 
                 if (_samples.TryPop(out var sample))
                 {
-                    if (!frameRateWatch.IsRunning)
-                    {
-                        frameRateWatch.Start();
-                    }
-
                     if (IsNewFrame(sample))
                     {
                         // close out existing frame
@@ -121,6 +116,11 @@ namespace Tello.Video
                             {
                                 Debug.WriteLine($"{frame.TimeIndex}: #{frame.Index}, compositing rate: {(frameIndex / frameRateWatch.Elapsed.TotalSeconds).ToString("#,#")}f/s, {frame.Size.ToString("#,#")}B, {((uint)(byteCount * 8 / frame.TimeIndex.TotalSeconds)).ToString("#,#")}b/s");
                             }
+                        }
+                        else
+                        {
+                            // first frame, so start timer
+                            frameRateWatch.Start();
                         }
                         stream = new MemoryStream(1024 * 16);
                     }
@@ -141,20 +141,15 @@ namespace Tello.Video
             _samples.Push(sample);
         }
 
-        public Task<VideoFrame> GetFrameAsync(TimeSpan timeout)
+        public bool TryGetFrame(out VideoFrame frame, TimeSpan timeout)
         {
-            return Task.Run(() =>
+            var wait = new SpinWait();
+            var stopwatch = Stopwatch.StartNew();
+            while (!_frames.TryPop(out frame) && stopwatch.Elapsed < timeout)
             {
-                var wait = new SpinWait();
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                VideoFrame frame = null;
-                while (!_frames.TryPop(out frame) && stopwatch.Elapsed < timeout)
-                {
-                    wait.SpinOnce();
-                }
-                return frame;
-            });
+                wait.SpinOnce();
+            }
+            return frame != null;
         }
     }
 }

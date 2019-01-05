@@ -38,22 +38,17 @@ namespace Tello.Video
 
         public bool TryPop(out T result)
         {
-            if (IsEmpty)
-            {
-                result = default(T);
-                return false;
-            }
-
+            result = default(T);
             lock (_gate)
             {
-                result = _buffer[_tail];
-                _buffer[_tail] = default(T);
-
-                _tail = _tail < _head || _buffer.Length - _tail < _head
-                    ? (_tail + 1) % _buffer.Length
-                    : _tail;
+                if (_tail != _head)
+                {
+                    result = _buffer[_tail];
+                    _buffer[_tail] = default(T);
+                    _tail = (_tail + 1) % _buffer.Length;
+                }
             }
-            return true;
+            return result != null;
         }
 
         public bool TryPeek(out T result)

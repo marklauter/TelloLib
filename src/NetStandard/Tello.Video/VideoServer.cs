@@ -17,15 +17,16 @@ namespace Tello.Video
 
     public sealed class VideoServer
     {
-        public VideoServer(int port = 11111, int bufferSize = 0)
+        public VideoServer(int port = 11111, int bufferSize = 1204)
         {
             _udpReceiver = new UdpReceiver(port);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
-            if (bufferSize > 0)
+            if (bufferSize <= 0)
             {
-                _samples = new RingBuffer<byte[]>(bufferSize);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize));
             }
+            _samples = new RingBuffer<byte[]>(bufferSize);
         }
 
         #region fields
@@ -58,16 +59,12 @@ namespace Tello.Video
 
         public bool TryGetSample(out byte[] sample, TimeSpan timeout)
         {
-            sample = null;
-            if (_samples != null)
+            var spin = new SpinWait();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
             {
-                var spin = new SpinWait();
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
-                {
-                    spin.SpinOnce();
-                }
+                spin.SpinOnce();
             }
             return sample != null;
         }

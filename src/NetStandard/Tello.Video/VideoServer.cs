@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 using Tello.Udp;
 
 namespace Tello.Video
@@ -18,18 +17,24 @@ namespace Tello.Video
 
     public sealed class VideoServer
     {
-        // 1k buffer stores 1k samples
-        public VideoServer(int port = 11111, int bufferSize = 1024)
+        public VideoServer(int port = 11111, int bufferSize = 0)
         {
-            _samples = new RingBuffer<byte[]>(bufferSize);
             _udpReceiver = new UdpReceiver(port);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
+
+            if (bufferSize > 0)
+            {
+                _samples = new RingBuffer<byte[]>(bufferSize);
+            }
         }
 
+        #region fields
         public event EventHandler<SampleReadyArgs> SampleReady;
         private readonly UdpReceiver _udpReceiver;
         private readonly RingBuffer<byte[]> _samples;
+        #endregion
 
+        #region controls
         public void Start()
         {
             _udpReceiver.Start();
@@ -39,41 +44,32 @@ namespace Tello.Video
         {
             _udpReceiver.Stop();
         }
+        #endregion
 
         private void _udpReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
-            _samples.Push(e.Datagram);
+            if (_samples != null)
+            {
+                _samples.Push(e.Datagram);
+            }
+
             SampleReady?.Invoke(this, new SampleReadyArgs(e.Datagram));
         }
 
         public bool TryGetSample(out byte[] sample, TimeSpan timeout)
         {
-            var spin = new SpinWait();
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-            while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
+            sample = null;
+            if (_samples != null)
             {
-                spin.SpinOnce();
-            }
-            return sample != null;
-        }
-
-        public Task<byte[][]> GetSamplesAsync(int count, TimeSpan timeout)
-        {
-            return Task.Run(() =>
-            {
-                var samples = new byte[count][];
+                var spin = new SpinWait();
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                for (var i = 0; i < count; ++i)
+                while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
                 {
-                    if (!TryGetSample(out samples[i], stopwatch.Elapsed - timeout) || stopwatch.Elapsed > timeout)
-                    {
-                        break;
-                    }
+                    spin.SpinOnce();
                 }
-                return samples;
-            });
+            }
+            return sample != null;
         }
     }
 }

@@ -3,31 +3,15 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
-using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
-using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
 
 
-//https://stackoverflow.com/questions/25323434/mediaelement-set-source-from-stream
-
-//this has promise
-//https://github.com/cisco/openh264
-
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
-
-////https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/process-media-frames-with-mediaframereader
-
-////https://github.com/Microsoft/Windows-universal-samples/blob/dev/Samples/SimpleCommunication/cs/CaptureDevice.cs
-//    here's an idea: 
-//capture video from camera using MediaCapture (see the sample TCP project I cloned last night)
-////https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/basic-photo-video-and-audio-capture-with-mediacapture
-//then push the video via UDP to own self and try to show it in media element
-
-//    the memory stream gets too big and then crashes
+//https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/process-media-frames-with-mediaframereader
+//https://github.com/Microsoft/Windows-universal-samples/blob/dev/Samples/SimpleCommunication/cs/CaptureDevice.cs
 
 namespace Tello.Video.UWP
 {
@@ -45,7 +29,7 @@ namespace Tello.Video.UWP
             _tello.ResponseReceived += _tello_ResponseReceived;
 
             StartStateReciever();
-            _videoServer.Start();
+            _frameServer.Start();
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -57,9 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoServer _videoServer = new VideoServer(11111);
-
-        //private byte[] _fullvideo;
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2400000, TimeSpan.FromSeconds(30), 1460, 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -68,26 +50,12 @@ namespace Tello.Video.UWP
             {
                 _videoInitialized = true;
 
-                //using (var file = File.OpenRead("tello.mp4"))
-                //{
-                //    _fullvideo = new byte[file.Length];
-                //    file.Read(_fullvideo, 0, (int)file.Length);
-                //    _dataReady = true;
-                //}
-
-                //var file = await StorageFile.GetFileFromApplicationUriAsync(new Uri("ms-appx:///AppData/goodvideo.mp4", UriKind.RelativeOrAbsolute));
-                //var clip = await MediaClip.CreateFromFileAsync(file);
-                //var videoEncodingProperties = clip.GetVideoEncodingProperties();
-
                 var vep = VideoEncodingProperties.CreateH264();
-                //2352698.5700033255736614566012637
-                //vep.Bitrate = 2350000;
+                vep.Bitrate = 2400000;
                 vep.Height = 720;
                 vep.Width = 960;
 
-                var vsd = new VideoStreamDescriptor(vep);
-
-                var mss = new MediaStreamSource(vsd)
+                var mss = new MediaStreamSource(new VideoStreamDescriptor(vep))
                 {
                     IsLive = true,
                     BufferTime = TimeSpan.FromSeconds(2)
@@ -100,9 +68,34 @@ namespace Tello.Video.UWP
                 //mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
 
                 _mediaElement.SetMediaStreamSource(mss);
+                _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
                 //_mediaElement.RealTimePlayback = true;
 
+                _frameServer.FrameReady += _frameServer_FrameReady;
+
                 Debug.WriteLine("media element initialized");
+            }
+        }
+
+        private void _mediaElement_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+            Debug.WriteLine($"_mediaElement_BufferingProgressChanged: {_mediaElement.BufferingProgress}%");
+        }
+
+        private bool _framesReady = false;
+        private async void _frameServer_FrameReady(object sender, FrameReadyArgs e)
+        {
+            if (!_receivingVideo)
+            {
+                _framesReady = false;
+            }
+            if (!_framesReady)
+            {
+                _framesReady = true;
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    _mediaElement.Play();
+                });
             }
         }
 
@@ -121,43 +114,19 @@ namespace Tello.Video.UWP
         //    //Debug.WriteLine("Mss_SwitchStreamsRequested");
         //}
 
-        //private void Mss_SampleRendered(MediaStreamSource sender, MediaStreamSourceSampleRenderedEventArgs args)
-        //{
-        //    //Debug.WriteLine("Mss_SampleRendered");
-        //}
-
         private void Mss_Closed(MediaStreamSource sender, MediaStreamSourceClosedEventArgs args)
         {
             Debug.WriteLine("Mss_Closed");
-            //_dataReady = false;
         }
 
-        private async void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
+        private void Mss_Starting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
         {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
             Debug.WriteLine("Mss_Starting");
-            var deferral = args.Request.GetDeferral();
-            try
-            {
-                Debug.WriteLine($"{stopwatch.ElapsedMilliseconds}ms media player waiting");
-                while (!_videoServer.DataReady)
-                {
-                    await Task.Yield();
-                }
-            }
-            finally
-            {
-                deferral.Complete();
-            }
-            Debug.WriteLine($"{stopwatch.ElapsedMilliseconds}ms media player started");
         }
 
+        private readonly TimeSpan _frameTimeout = TimeSpan.FromMilliseconds(250);
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
-            //args.Request.Sample = MediaStreamSample.CreateFromBuffer(_fullvideo.AsBuffer(), DateTime.Now - _started.Value);
-
             Debug.Write("+");
 
             // this creates a buffer delay of ~ 5 to 10 seconds
@@ -169,11 +138,10 @@ namespace Tello.Video.UWP
             //}
 
             // this creates a buffer delay of ~ 2 to 3 seconds
-            var frame = _videoServer.ReadVideoFrame();
-            if (frame != null)
+            if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
             {
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
-                args.Request.Sample.Duration = VideoFrame.DurationPerFrame;
+                args.Request.Sample.Duration = frame.Duration;
             }
             Debug.Write("-");
         }
@@ -181,7 +149,7 @@ namespace Tello.Video.UWP
 
         #region tello state
 
-        private readonly Receiver _stateReceiver = new Receiver(8890);
+        private readonly UdpReceiver _stateReceiver = new UdpReceiver(8890);
 
         private void StartStateReciever()
         {
@@ -190,7 +158,7 @@ namespace Tello.Video.UWP
             Debug.WriteLine($"state receiver listening on port 8890");
         }
 
-        private async void StateReceiver_DatagramReceived(object sender, ReceiverDatagramArgs e)
+        private async void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { _telloStateText.Text = $"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}"; });
         }
@@ -202,16 +170,22 @@ namespace Tello.Video.UWP
 
         private ObservableCollection<string> _telloCommandReponse = new ObservableCollection<string>();
 
-        private const int _sendVideo = 999;
+        private const int _startVideo = 999;
+        private const int _stopVideo = 1000;
+        private bool _receivingVideo = false;
 
         private async void _tello_ResponseReceived(object sender, ResponseReceivedArgs e)
         {
             var message = Encoding.UTF8.GetString(e.Response.Datagram);
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
             {
-                if (e.Request.UserData == _sendVideo && message.ToLower() == "ok")
+                if (e.Request.UserData == _startVideo && message.ToLower() == "ok")
                 {
-                    _mediaElement.Play();
+                    _receivingVideo = true;
+                }
+                if (e.Request.UserData == _stopVideo && message.ToLower() == "ok")
+                {
+                    _receivingVideo = false;
                 }
                 _telloCommandReponse.Insert(0, message);
             });
@@ -253,7 +227,7 @@ namespace Tello.Video.UWP
             _telloCommandReponse.Insert(0, "sending 'streamon' (start video) command");
             var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
             {
-                UserData = _sendVideo
+                UserData = _startVideo
             };
             _tello.Send(request);
         }
@@ -263,7 +237,10 @@ namespace Tello.Video.UWP
             _mediaElement.Stop();
 
             _telloCommandReponse.Insert(0, "sending 'streamon' (stop video) command");
-            var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false);
+            var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false)
+            {
+                UserData = _stopVideo
+            };
             _tello.Send(request);
         }
 

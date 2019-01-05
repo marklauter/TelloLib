@@ -26,8 +26,8 @@ namespace Tello.Udp
         private readonly IPEndPoint _endPoint;
         private UdpClient _client = null;
 
-        public event EventHandler OnConnect;
-        public event EventHandler OnDisconnect;
+        public event EventHandler Connected;
+        public event EventHandler Disconnected;
         public event EventHandler<ResponseReceivedArgs> ResponseReceived;
         public string Destination { get; }
 
@@ -55,7 +55,7 @@ namespace Tello.Udp
                     //};
                     _client.Connect(_endPoint);
                 });
-                OnConnect?.Invoke(this, EventArgs.Empty);
+                Connected?.Invoke(this, EventArgs.Empty);
             }
             catch(Exception ex)
             {
@@ -76,7 +76,7 @@ namespace Tello.Udp
                     _client = null;
                 }
                 IsConnected = false;
-                OnDisconnect?.Invoke(this, EventArgs.Empty);
+                Disconnected?.Invoke(this, EventArgs.Empty);
             }
         }
 

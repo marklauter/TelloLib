@@ -11,7 +11,7 @@ namespace Tello.Udp
             Port = port;
         }
 
-        public event EventHandler<DatagramReceivedArgs> OnDatagramReceived;
+        public event EventHandler<DatagramReceivedArgs> DatagramReceived;
 
         public int Port { get; }
         public bool Active { get; private set; } = false;
@@ -40,7 +40,7 @@ namespace Tello.Udp
                     {
                         var receiveResult = await client.ReceiveAsync();
                         var eventArgs = new DatagramReceivedArgs(receiveResult.Buffer, receiveResult.RemoteEndPoint);
-                        OnDatagramReceived?.Invoke(this, eventArgs);
+                        DatagramReceived?.Invoke(this, eventArgs);
                     }
                 }
             });

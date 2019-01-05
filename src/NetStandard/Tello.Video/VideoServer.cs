@@ -23,7 +23,7 @@ namespace Tello.Video
         {
             _samples = new RingBuffer<byte[]>(bufferSize);
             _udpReceiver = new UdpReceiver(port);
-            _udpReceiver.OnDatagramReceived += _udpReceiver_DatagramReceived;
+            _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
         }
 
         public event EventHandler<SampleReadyArgs> SampleReady;
@@ -46,43 +46,31 @@ namespace Tello.Video
             SampleReady?.Invoke(this, new SampleReadyArgs(e.Datagram));
         }
 
-        /// <summary>
-        /// Reads a sample from buffer. Returns null if timeout or empty buffer
-        /// </summary>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
-        public Task<byte[]> GetSampleAsync(TimeSpan timeout)
+        public bool TryGetSample(out byte[] sample, TimeSpan timeout)
         {
-            return Task.Run(() =>
+            var spin = new SpinWait();
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
             {
-                byte[] sample = null;
-                var spin = new SpinWait();
-                var stopwatch = new Stopwatch();
-                stopwatch.Start();
-                while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
-                {
-                    spin.SpinOnce();
-                }
-                return sample;
-            });
+                spin.SpinOnce();
+            }
+            return sample != null;
         }
 
-        /// <summary>
-        /// Attempts to read count samples before timeout
-        /// </summary>
-        /// <param name="count"></param>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
         public Task<byte[][]> GetSamplesAsync(int count, TimeSpan timeout)
         {
-            return Task.Run(async () =>
+            return Task.Run(() =>
             {
                 var samples = new byte[count][];
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
                 for (var i = 0; i < count; ++i)
                 {
-                    samples[i] = await GetSampleAsync(stopwatch.Elapsed - timeout);
+                    if (!TryGetSample(out samples[i], stopwatch.Elapsed - timeout) || stopwatch.Elapsed > timeout)
+                    {
+                        break;
+                    }
                 }
                 return samples;
             });

@@ -1,133 +1,159 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tello.Video
 {
-    public sealed class VideoFrame
+    public class FrameReadyArgs
     {
-        public VideoFrame(byte[] content, long frameIndex, double fps, long ttlBytesProcessed)
+        public FrameReadyArgs(VideoFrame frame)
         {
-            Content = content;
-            Index = frameIndex;
-            FramesPerSecond = fps;
-            Size = content.Length;
-            TimeIndex = TimeSpan.FromSeconds(frameIndex / 30.0);
-            TtlBytesProcessed = ttlBytesProcessed;
+            Frame = frame;
         }
 
-        public static TimeSpan DurationPerFrame { get; } = TimeSpan.FromSeconds(1 / 30.0);
-
-        public byte[] Content { get; }
-        public long Index { get; }
-        public double FramesPerSecond { get; }
-        public int Size { get; }
-        public TimeSpan TimeIndex { get; }
-        public long TtlBytesProcessed { get; }
-
-        public override string ToString()
-        {
-            return $"{TimeIndex}: #{Index}, {(int)FramesPerSecond}f/s, {Size.ToString("#,#")}B, {((uint)(TtlBytesProcessed * 8 / TimeIndex.TotalSeconds)).ToString("#,#")}b/s";
-        }
+        public VideoFrame Frame { get; }
     }
 
     public sealed class FrameComposer
     {
+        public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime)
+        {
+            _frameRate = frameRate;
+            _bitRate = bitRate;
+            _frames = new RingBuffer<VideoFrame>((int)(_frameRate * bufferTime.TotalSeconds));
+
+            _frameDuration = TimeSpan.FromSeconds(1 / _frameRate);
+
+            var bytesPerSecond = _bitRate / 8;
+            var samplesPerSecond = bytesPerSecond / _bytesPerSample;
+            _samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 2));
+        }
+
+        public event EventHandler<FrameReadyArgs> FrameReady;
+
+        #region fields
+        private readonly int _bytesPerSample = 1460;
+        private readonly TimeSpan _frameDuration;
+        private readonly double _frameRate;
+        private readonly int _bitRate;
+        private readonly RingBuffer<byte[]> _samples;
+        private readonly RingBuffer<VideoFrame> _frames;
+        #endregion
+
         #region controls
         private bool _running = false;
         public async void Start()
         {
             if (!_running)
             {
+                _paused = false;
                 _running = true;
                 await Task.Run(() => { ComposeFrames(); });
             }
         }
+
+        private bool _paused = false;
+        public void Pause()
+        {
+            _paused = true;
+        }
+
+        public void Resume()
+        {
+            _paused = false;
+        }
+
         public void Stop()
         {
             _running = false;
+            _paused = false;
         }
         #endregion
 
-        #region queues
-        private readonly ConcurrentQueue<byte[]> _inputSamples = new ConcurrentQueue<byte[]>();
-        private readonly ConcurrentQueue<VideoFrame> _outputFrames = new ConcurrentQueue<VideoFrame>();
-        #endregion
+        #region frame composition
+        private bool IsNewFrame(byte[] sample)
+        {
+            // check sample for 0x00 0x00 0x00 0x01 header - H264 NALU frame start delimiter
+            return sample.Length > 4 && sample[0] == 0x00 && sample[1] == 0x00 && sample[2] == 0x00 && sample[3] == 0x01;
+        }
 
-        public bool FramesReady { get; private set; }
+        private VideoFrame UnsafeQueueFrame(MemoryStream stream, ref long frameIndex)
+        {
+            var frame = new VideoFrame(stream.ToArray(), frameIndex, TimeSpan.FromSeconds(frameIndex / _frameRate), _frameDuration);
+            _frames.Push(frame);
+            FrameReady?.Invoke(this, new FrameReadyArgs(frame));
+            ++frameIndex;
+            return frame;
+        }
 
         private void ComposeFrames()
         {
             long byteCount = 0;
             long frameIndex = 0;
-            MemoryStream frameStream = null;
-            var fpsWatch = new Stopwatch();
+            MemoryStream stream = null;
+            var frameRateWatch = new Stopwatch();
 
-            while (true)
+            while (_running)
             {
-                // TryDequeue checks IsEmpty 
-                if (_inputSamples.TryDequeue(out var sample))
+                if (_paused)
                 {
-                    if (!fpsWatch.IsRunning)
+                    continue;
+                }
+
+                if (_samples.TryPop(out var sample))
+                {
+                    if (!frameRateWatch.IsRunning)
                     {
-                        fpsWatch.Start();
+                        frameRateWatch.Start();
                     }
 
-                    // scan sample for 0x00 0x00 0x00 0x01 - H264 NALU delimiter
-                    if (sample.Length > 4 && sample[0] == 0x00 && sample[1] == 0x00 && sample[2] == 0x00 && sample[3] == 0x01)
+                    if (IsNewFrame(sample))
                     {
                         // close out existing frame
-                        if (frameStream != null)
+                        if (stream != null)
                         {
-                            var frame = new VideoFrame(frameStream.ToArray(), frameIndex, frameIndex / fpsWatch.Elapsed.TotalSeconds, byteCount);
-                            _outputFrames.Enqueue(frame);
-                            ++frameIndex;
-                            FramesReady = true;
-
-                            // write a frame sample to debug output ~ every second so we can see how we're doing with performance
-                            if (frameIndex % 30 == 0)
+                            var frame = UnsafeQueueFrame(stream, ref frameIndex);
+                            // write a frame sample to debug output ~every 5 seconds so we can see how we're doing with performance
+                            if (frameIndex % _frameRate * 5 == 0)
                             {
-                                Debug.WriteLine($"\nkeyframe: {frame}");
+                                Debug.WriteLine($"{frame.TimeIndex}: #{frame.Index}, compositing rate: {(frameIndex / frameRateWatch.Elapsed.TotalSeconds).ToString("#,#")}f/s, {frame.Size.ToString("#,#")}B, {((uint)(byteCount * 8 / frame.TimeIndex.TotalSeconds)).ToString("#,#")}b/s");
                             }
                         }
-                        frameStream = new MemoryStream(1024 * 16);
+                        stream = new MemoryStream(1024 * 16);
                     }
 
-                    if (frameStream != null)
+                    // don't start writing until we have a frame start
+                    if (stream != null)
                     {
-                        frameStream.Write(sample, 0, sample.Length);
+                        stream.Write(sample, 0, sample.Length);
                         byteCount += sample.Length;
                     }
                 }
             }
         }
+        #endregion
 
         public void AddSample(byte[] sample)
         {
-            _inputSamples.Enqueue(sample);
+            _samples.Push(sample);
         }
 
-        public VideoFrame ReadFrame()
+        public Task<VideoFrame> GetFrameAsync(TimeSpan timeout)
         {
-            Stopwatch stopwatch = null;
-            VideoFrame frame = null;
-            while (!_outputFrames.TryDequeue(out frame))
+            return Task.Run(() =>
             {
-                if (stopwatch == null)
+                var wait = new SpinWait();
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+                VideoFrame frame = null;
+                while (!_frames.TryPop(out frame) && stopwatch.Elapsed < timeout)
                 {
-                    stopwatch = new Stopwatch();
-                    stopwatch.Start();
+                    wait.SpinOnce();
                 }
-
-                if (stopwatch.ElapsedMilliseconds > 5000)
-                {
-                    Debug.WriteLine("ReadFrame timed out");
-                    break;
-                }
-            }
-            return frame;
+                return frame;
+            });
         }
     }
 }

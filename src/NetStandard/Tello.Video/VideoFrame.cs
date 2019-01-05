@@ -8,7 +8,7 @@ namespace Tello.Video
         {
             Content = content;
             Index = frameIndex;
-            TimeIndex = TimeIndex;
+            TimeIndex = timeIndex;
             Duration = duration;
             Size = content.Length;
         }

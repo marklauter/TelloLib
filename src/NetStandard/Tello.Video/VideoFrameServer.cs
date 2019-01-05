@@ -60,15 +60,15 @@ namespace Tello.Video
             return _frameComposer.TryGetFrame(out frame, timeout);
         }
 
-        public VideoFrameCollection ReadFramesAsync(MediaStreamSourceSampleRequest request, TimeSpan timeout, int frameCount)
+        public VideoFrameCollection ReadFramesAsync(MediaStreamSourceSampleRequest request, TimeSpan timeout, int maxFrameCount)
         {
             var stopwatch = Stopwatch.StartNew();
             var collection = new VideoFrameCollection();
 
-            while (collection.Count < frameCount && stopwatch.Elapsed < timeout && _frameComposer.TryGetFrame(out var frame, timeout))
+            while (collection.Count < maxFrameCount && stopwatch.Elapsed < timeout && _frameComposer.TryGetFrame(out var frame, timeout))
             {
                 collection.Add(frame);
-                var progress = (uint)(collection.Count / frameCount * 100);
+                var progress = (uint)(collection.Count / maxFrameCount * 100);
                 request.ReportSampleProgress(progress);
             }
 

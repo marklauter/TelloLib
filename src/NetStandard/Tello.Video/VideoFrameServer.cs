@@ -19,23 +19,23 @@ namespace Tello.Video
         public event EventHandler<FrameReadyArgs> FrameReady;
 
         #region controls
-        private void Start()
+        public void Start()
         {
             _frameComposer.Start();
             _udpReceiver.Start();
         }
 
-        private void Pause()
+        public void Pause()
         {
             _frameComposer.Pause();
         }
 
-        private void Resume()
+        public void Resume()
         {
             _frameComposer.Resume();
         }
 
-        private void Stop()
+        public void Stop()
         {
             _udpReceiver.Stop();
             _frameComposer.Stop();

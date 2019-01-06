@@ -14,6 +14,20 @@ namespace Tello.Video
         private int _head = 0;
         private int _tail = 0;
 
+        public int Length
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    var inverted = _tail > _head;
+                    return inverted
+                        ? _buffer.Length - _tail + _head
+                        : _head - _tail;
+                }
+            }
+        }
+
         public bool IsEmpty
         {
             get
@@ -62,6 +76,40 @@ namespace Tello.Video
                 result = _buffer[_tail];
             }
             return true;
+        }
+
+        public T[] Flush()
+        {
+            if (IsEmpty)
+            {
+                return new T[0];
+            }
+
+            lock (_gate)
+            {
+                var inverted = _tail > _head;
+                var size = inverted
+                    ? _buffer.Length - _tail + _head
+                    : _head - _tail;
+
+                var result = new T[size];
+                if (inverted)
+                {
+                    var tailToEnd = _buffer.Length - _tail;
+                    Array.Copy(_buffer, _tail, result, 0, tailToEnd);
+                    Array.Copy(_buffer, 0, result, tailToEnd, _head);
+                }
+                else
+                {
+                    Array.Copy(_buffer, _tail, result, 0, size);
+                }
+
+                Array.Clear(_buffer, 0, _buffer.Length);
+                _head = 0;
+                _tail = 0;
+
+                return result;
+            }
         }
 
         public bool TryClear()

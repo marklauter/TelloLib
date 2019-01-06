@@ -60,7 +60,7 @@ namespace Tello.Video
             return _frameComposer.TryGetFrame(out frame, timeout);
         }
 
-        public VideoFrameCollection ReadFramesAsync(MediaStreamSourceSampleRequest request, TimeSpan timeout, int maxFrameCount)
+        public VideoFrameCollection ReadFrames(MediaStreamSourceSampleRequest request, TimeSpan timeout, int maxFrameCount)
         {
             var stopwatch = Stopwatch.StartNew();
             var collection = new VideoFrameCollection();
@@ -74,10 +74,29 @@ namespace Tello.Video
 
             if (stopwatch.ElapsedMilliseconds > collection.Duration.TotalMilliseconds)
             {
-                Debug.WriteLine($"ReadSample: took too long! process duration: {stopwatch.ElapsedMilliseconds}ms, sample duration: {collection.Duration.TotalMilliseconds}ms");
+                Debug.WriteLine($"ReadFrames: took too long! process duration: {stopwatch.ElapsedMilliseconds}ms, sample duration: {collection.Duration.TotalMilliseconds}ms");
             }
 
             return collection;
+        }
+
+        public VideoFrameCollection ReadAllFrames()
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var frames = _frameComposer.FlushBuffer();
+            if (frames != null && frames.Length > 0)
+            {
+                var collection = new VideoFrameCollection(frames);
+                if (stopwatch.ElapsedMilliseconds > collection.Duration.TotalMilliseconds)
+                {
+                    Debug.WriteLine($"ReadAllFrames: took too long! process duration: {stopwatch.ElapsedMilliseconds}ms, sample duration: {collection.Duration.TotalMilliseconds}ms");
+                }
+                return collection;
+            }
+            else
+            {
+                return null;
+            }
         }
     }
 }

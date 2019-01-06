@@ -14,6 +14,24 @@ namespace Tello.Video
             }
         }
 
+        public VideoFrameCollection(VideoFrame[] frames)
+        {
+            if (frames == null || frames.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(frames));
+            }
+
+            var frame = frames[0];
+            Count = frames.Length;
+            TimeIndex = frame.TimeIndex;
+            for (var i = 0; i < frames.Length; ++i)
+            {
+                frame = frames[i];
+                _sample.Write(frame.Content, 0, frame.Size);
+                Duration += frame.Duration;
+            }
+        }
+
         public void Add(VideoFrame frame)
         {
             if (frame == null)
@@ -21,19 +39,17 @@ namespace Tello.Video
                 throw new ArgumentNullException(nameof(frame));
             }
 
-            if(_frames.Count == 0)
+            if (Count == 0)
             {
                 TimeIndex = frame.TimeIndex;
             }
 
-            _frames.Add(frame);
-
             _sample.Write(frame.Content, 0, frame.Size);
-
             Duration += frame.Duration;
+            ++Count;
         }
 
-        private readonly List<VideoFrame> _frames = new List<VideoFrame>();
+        //private readonly List<VideoFrame> _frames = new List<VideoFrame>();
         private readonly MemoryStream _sample = new MemoryStream();
 
         public byte[] Content => _sample.ToArray();
@@ -41,7 +57,8 @@ namespace Tello.Video
         public long Size => _sample.Length;
         public TimeSpan TimeIndex { get; private set; }
 
-        public VideoFrame this[int index] => _frames[index];
-        public int Count => _frames.Count;
+        //public VideoFrame this[int index] => _frames[index];
+        //public int Count => _frames.Count;
+        public int Count { get; private set; } = 0;
     }
 }

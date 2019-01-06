@@ -12,5 +12,6 @@ namespace Tello.Udp
         }
         public byte[] Datagram { get; }
         public IPEndPoint RemoteEndpoint { get; }
+        public byte[] Reply { get; set; }
     }
 }

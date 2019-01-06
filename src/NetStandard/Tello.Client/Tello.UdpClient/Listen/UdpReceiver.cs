@@ -41,6 +41,10 @@ namespace Tello.Udp
                         var receiveResult = await client.ReceiveAsync();
                         var eventArgs = new DatagramReceivedArgs(receiveResult.Buffer, receiveResult.RemoteEndPoint);
                         DatagramReceived?.Invoke(this, eventArgs);
+                        if(eventArgs.Reply != null)
+                        {
+                            await client.SendAsync(eventArgs.Reply, eventArgs.Reply.Length, eventArgs.RemoteEndpoint);
+                        }
                     }
                 }
             });

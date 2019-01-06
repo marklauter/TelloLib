@@ -32,14 +32,26 @@ namespace Udp.Sender
         private static void TestTelloUdp2TelloTxt()
         {
             Console.WriteLine($"sending on port {8889}");
+            Console.WriteLine("commands (not case sensitive): ");
+            Console.WriteLine("connect to tello: C");
+            Console.WriteLine("disconnect: D");
+            Console.WriteLine("take off: T");
+            Console.WriteLine("land: L");
+            Console.WriteLine("forward: F");
+            Console.WriteLine("backward: B");
+            Console.WriteLine("toggle video: V");
+            Console.WriteLine("get battery: P");
+            Console.WriteLine("quit: Q");
 
-            using (var client = new Transceiver("192.168.10.1", 8889))
+            // real tello
+            //using (var client = new Transceiver("192.168.10.1", 8889))
+            // emulated tello
+            using (var client = new Transceiver("127.0.0.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceivedTxt;
 
                 while (true)
                 {
-                    Console.WriteLine("enter 'c' connect to tello or 'q' to quit.");
                     var message = Console.ReadLine();
                     if (message.ToLower() == "q")
                     {

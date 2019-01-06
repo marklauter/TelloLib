@@ -42,9 +42,13 @@ namespace Tello.Emulator
                 switch (command)
                 {
                     case Commands.EnterSdkMode:
-                        _inSDKMode = true;
-                        _stateServer.Start();
-                        return _ok;
+                        if (!_inSDKMode)
+                        {
+                            _inSDKMode = true;
+                            _stateServer.Start();
+                            return _ok;
+                        }
+                        return null;
                     case Commands.Takeoff:
                         _takeoffTime = DateTime.Now;
                         _droneState.Height = 20;

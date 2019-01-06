@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Tello.Udp
 {
-    public class UdpReceiver
+    public sealed class UdpReceiver
     {
         public UdpReceiver(int port) : base()
         {

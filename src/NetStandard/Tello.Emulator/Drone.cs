@@ -14,16 +14,18 @@ namespace Tello.Emulator
 
     public class Drone
     {
-        public Drone()
+        public Drone(ILog log)
         {
+            _log = log;
+
             _udpReceiver = new UdpReceiver(8889);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             _droneState = new DroneState();
             _stateServer = new StateServer(_droneState);
             _videoServer = new VideoServer();
-            _commandInterpreter = new CommandInterpreter(_droneState, _videoServer, _stateServer);
-            _batteryTimer = new Timer(UpdateBattery);
+            _commandInterpreter = new CommandInterpreter(_droneState, _videoServer, _stateServer, log);
+            _batteryTimer = new Timer(UpdateBattery, null, 10000, 10000);
         }
 
         private void UpdateBattery(object state)
@@ -31,14 +33,16 @@ namespace Tello.Emulator
             if (_poweredOn)
             {
                 _droneState.BatteryPercentage = 100 - (int)((DateTime.Now - _poweredOnTime).TotalMinutes / 15.0 * 100);
-                if(_droneState.BatteryPercentage < 1)
+                Log($"battery updated {_droneState.BatteryPercentage}");
+                if (_droneState.BatteryPercentage < 1)
                 {
                     PowerOff();
-                    Debug.WriteLine("battery died");
+                    Log("battery died");
                 }
             }
         }
 
+        private readonly ILog _log;
         private readonly Timer _batteryTimer;
         private bool _poweredOn = false;
         private DateTime _poweredOnTime;
@@ -52,6 +56,7 @@ namespace Tello.Emulator
         {
             var message = Encoding.UTF8.GetString(e.Datagram);
             var response = _commandInterpreter.Interpret(message);
+            Log($"message: {message}, response: {response}");
             if (!String.IsNullOrEmpty(response))
             {
                 e.Reply = Encoding.UTF8.GetBytes(response);
@@ -65,6 +70,7 @@ namespace Tello.Emulator
                 _poweredOn = true;
                 _udpReceiver.Start();
                 _poweredOnTime = DateTime.Now;
+                Log("drone powered on");
             }
         }
 
@@ -74,6 +80,15 @@ namespace Tello.Emulator
             {
                 _poweredOn = false;
                 _udpReceiver.Stop();
+                Log("drone powered off");
+            }
+        }
+
+        public void Log(string meesage)
+        {
+            if (_log != null)
+            {
+                _log.WriteLine(meesage);
             }
         }
     }

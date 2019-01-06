@@ -21,13 +21,11 @@ namespace Tello.Video
         public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample)
         {
             _frameRate = frameRate;
-            _bitRate = bitRate;
-            _bytesPerSample = bytesPerSample;
 
             _frameDuration = TimeSpan.FromSeconds(1 / _frameRate);
 
-            var bytesPerSecond = _bitRate / 8;
-            var samplesPerSecond = bytesPerSecond / _bytesPerSample;
+            var bytesPerSecond = bitRate / 8;
+            var samplesPerSecond = bytesPerSecond / bytesPerSample;
             _samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 2));
             _frames = new RingBuffer<VideoFrame>((int)(_frameRate * bufferTime.TotalSeconds));
         }
@@ -35,10 +33,8 @@ namespace Tello.Video
         public event EventHandler<FrameReadyArgs> FrameReady;
 
         #region fields
-        private readonly int _bytesPerSample;
         private readonly TimeSpan _frameDuration;
         private readonly double _frameRate;
-        private readonly int _bitRate;
         private readonly RingBuffer<byte[]> _samples;
         private readonly RingBuffer<VideoFrame> _frames;
         #endregion

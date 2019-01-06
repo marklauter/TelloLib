@@ -5,7 +5,7 @@ namespace Tello.Emulator
 {
     internal sealed class StateServer : UdpServer
     {
-        public StateServer(DroneState droneState)
+        public StateServer(int port, DroneState droneState) : base(port)
         {
             _droneState = droneState ?? throw new System.ArgumentNullException(nameof(droneState));
         }
@@ -14,8 +14,8 @@ namespace Tello.Emulator
 
         protected override byte[] GetDatagram()
         {
-            // 10Hz state reporting
-            Task.Delay(100);
+            // 5Hz state reporting
+            Task.Delay(200);
             return Encoding.UTF8.GetBytes(_droneState.ToString());
         }
     }

@@ -2,6 +2,8 @@
 {
     internal sealed class VideoServer : UdpServer
     {
+        public VideoServer(int port) : base(port) { }
+
         protected override byte[] GetDatagram()
         {
             //todo: read video from camera or stream or something

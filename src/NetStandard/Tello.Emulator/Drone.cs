@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Tello.Udp;
@@ -22,8 +21,8 @@ namespace Tello.Emulator
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             _droneState = new DroneState();
-            _stateServer = new StateServer(_droneState);
-            _videoServer = new VideoServer();
+            _stateServer = new StateServer(8890, _droneState);
+            _videoServer = new VideoServer(11111);
             _commandInterpreter = new CommandInterpreter(_droneState, _videoServer, _stateServer, log);
             _batteryTimer = new Timer(UpdateBattery, null, 10000, 10000);
         }

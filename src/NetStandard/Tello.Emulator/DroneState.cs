@@ -1,7 +1,7 @@
 ﻿namespace Tello.Emulator
 {
     //https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
-    public class DroneState
+    internal class DroneState
     {
         /// <summary>
         /// speed in cm/s

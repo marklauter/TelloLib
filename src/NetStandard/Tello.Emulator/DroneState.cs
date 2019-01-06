@@ -83,7 +83,7 @@
 
         public override string ToString()
         {
-            return $"pitch:{Pitch};roll:{Roll};yaw:{Yaw};vgx:{XSpeed};vgy:{YSpeed};vgz:{ZSpeed};templ:{TemperatureLow};temph:{TemperatureHigh};tof:{TimeOfFlight};h:{Height};bat:{BatteryPercentage};baro:{BarometricPressure.ToString("#.##")};time:{MotorTime};agx:{AccelerationX.ToString("#.##")};agy:{AccelerationY.ToString("#.##")};agz:{AccelerationZ.ToString("#.##")};\r\n";
+            return $"pitch:{Pitch};roll:{Roll};yaw:{Yaw};vgx:{XSpeed};vgy:{YSpeed};vgz:{ZSpeed};templ:{TemperatureLow};temph:{TemperatureHigh};tof:{TimeOfFlight};h:{Height};bat:{BatteryPercentage};baro:{BarometricPressure.ToString("F2")};time:{MotorTime};agx:{AccelerationX.ToString("F2")};agy:{AccelerationY.ToString("F2")};agz:{AccelerationZ.ToString("F2")};\r\n";
         }
     }
 }

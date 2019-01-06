@@ -89,7 +89,7 @@ namespace Tello.Emulator
         private static Dictionary<string, Commands> _commands { get; } = new Dictionary<string, Commands>()
         {
             { "command", Commands.EnterSdkMode },
-            { "takoff", Commands.Takeoff },
+            { "takeoff", Commands.Takeoff },
             { "land", Commands.Land },
             { "streamon", Commands.StartVideo },
             { "streamoff", Commands.StopVideo },

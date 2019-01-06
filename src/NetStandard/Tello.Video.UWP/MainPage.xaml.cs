@@ -41,7 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2400000, TimeSpan.FromSeconds(10), 1460, 11111);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2500000, TimeSpan.FromSeconds(0.5), 1460, 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -69,7 +69,7 @@ namespace Tello.Video.UWP
 
                 _mediaElement.SetMediaStreamSource(mss);
                 _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
-                _mediaElement.RealTimePlayback = true;
+                //_mediaElement.RealTimePlayback = true;
 
                 _frameServer.FrameReady += _frameServer_FrameReady;
 
@@ -79,7 +79,7 @@ namespace Tello.Video.UWP
 
         private void _mediaElement_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            Debug.WriteLine($"_mediaElement_BufferingProgressChanged: {_mediaElement.BufferingProgress}%");
+            Debug.WriteLine($"\n_mediaElement_BufferingProgressChanged: {(100 *_mediaElement.BufferingProgress).ToString("F1")}%");
         }
 
         private bool _framesReady = false;
@@ -124,20 +124,36 @@ namespace Tello.Video.UWP
             Debug.WriteLine("Mss_Starting");
         }
 
-        private readonly TimeSpan _frameTimeout = TimeSpan.FromMilliseconds(250);
+        private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(2);
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             Debug.Write("+");
 
-            // this creates a buffer delay of ~ 5 to 10 seconds
-            //var sample = _videoServer.ReadSample(args.Request);
-            //if (sample != null)
+            // test flush
+            //var frames = _frameServer.ReadAllFrames();
+            //if (frames != null )
             //{
-            //    args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
-            //    args.Request.Sample.Duration = sample.Duration;
+            //    Debug.Write($"F:{frames.Count}");
+            //    args.Request.Sample = MediaStreamSample.CreateFromBuffer(frames.Content.AsBuffer(), frames.TimeIndex);
+            //    args.Request.Sample.Duration = frames.Duration;
+            //}
+            //else
+            //{
+            //    Debug.Write($"NULL");
             //}
 
-            // this creates a buffer delay of ~ 2 to 3 seconds
+            // test multiple frames
+            //var timeout = TimeSpan.FromMilliseconds(_frameTimeout.TotalMilliseconds * 5);
+            //var stopwatch = Stopwatch.StartNew();
+            //var frames = _frameServer.ReadFrames(args.Request, timeout, 5);
+            //args.Request.Sample = MediaStreamSample.CreateFromBuffer(frames.Content.AsBuffer(), frames.TimeIndex);
+            //args.Request.Sample.Duration = frames.Duration;
+            //if (stopwatch.Elapsed > timeout)
+            //{
+            //    Debug.Write($" TO: {stopwatch.ElapsedMilliseconds.ToString("#,#")}ms ");
+            //}
+
+            // test single framees
             var stopwatch = Stopwatch.StartNew();
             if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
             {
@@ -148,11 +164,12 @@ namespace Tello.Video.UWP
             else
             {
                 Debug.Write("F");
-                if(stopwatch.Elapsed > _frameTimeout)
+                if (stopwatch.Elapsed > _frameTimeout)
                 {
                     Debug.Write($" TO: {stopwatch.ElapsedMilliseconds.ToString("#,#")}ms ");
                 }
             }
+
             Debug.Write("-");
         }
         #endregion

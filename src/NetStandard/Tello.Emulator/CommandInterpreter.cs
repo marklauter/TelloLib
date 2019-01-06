@@ -5,13 +5,15 @@ namespace Tello.Emulator
 {
     internal class CommandInterpreter
     {
-        public CommandInterpreter(DroneState droneState, VideoServer videoServer, StateServer stateServer)
+        public CommandInterpreter(DroneState droneState, VideoServer videoServer, StateServer stateServer, ILog log)
         {
             _droneState = droneState ?? throw new ArgumentNullException(nameof(droneState));
             _videoServer = videoServer ?? throw new ArgumentNullException(nameof(videoServer));
             _stateServer = stateServer ?? throw new ArgumentNullException(nameof(stateServer));
+            _log = log;
         }
 
+        private readonly ILog _log;
         private readonly DroneState _droneState;
         private readonly VideoServer _videoServer;
         private readonly StateServer _stateServer;
@@ -26,17 +28,17 @@ namespace Tello.Emulator
 
         public string Interpret(string message)
         {
-            if (!_inSDKMode)
+            if (!_inSDKMode && message != "command")
             {
-                Debug.WriteLine($"{nameof(CommandInterpreter)} - not in SDK mode. message ignored: {message}");
+                Log($"{nameof(CommandInterpreter)} - not in SDK mode. message ignored: {message}");
                 return null;
             }
-            Debug.WriteLine($"{nameof(CommandInterpreter)} - message received: {message}");
+            Log($"{nameof(CommandInterpreter)} - message received: {message}");
 
             try
             {
                 var command = CommandParser.GetCommand(message);
-                Debug.WriteLine($"{nameof(CommandInterpreter)} - command identified: {command}");
+                Log($"{nameof(CommandInterpreter)} - command identified: {command}");
                 switch (command)
                 {
                     case Commands.EnterSdkMode:
@@ -230,8 +232,16 @@ namespace Tello.Emulator
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"{nameof(CommandInterpreter)} - {ex}");
+                Log($"{nameof(CommandInterpreter)} - {ex}");
                 return _error;
+            }
+        }
+
+        public void Log(string meesage)
+        {
+            if (_log != null)
+            {
+                _log.WriteLine(meesage);
             }
         }
     }

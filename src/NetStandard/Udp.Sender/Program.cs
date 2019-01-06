@@ -31,48 +31,74 @@ namespace Udp.Sender
         private static bool _video = false;
         private static void TestTelloUdp2TelloTxt()
         {
-            Console.WriteLine($"sending on port {8889}");
-            Console.WriteLine("commands (not case sensitive): ");
-            Console.WriteLine("connect to tello: C");
-            Console.WriteLine("disconnect: D");
-            Console.WriteLine("take off: T");
-            Console.WriteLine("land: L");
-            Console.WriteLine("forward: F");
-            Console.WriteLine("backward: B");
-            Console.WriteLine("toggle video: V");
-            Console.WriteLine("get battery: P");
-            Console.WriteLine("quit: Q");
-
             // real tello
             //using (var client = new Transceiver("192.168.10.1", 8889))
             // emulated tello
             using (var client = new Transceiver("127.0.0.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceivedTxt;
+                try
+                {
+                    client.Connect();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"failed to connect to udp. ex: {ex}");
+                }
+
+                Console.WriteLine("");
+                Console.WriteLine("=================================");
+                Console.WriteLine($"sending on port {8889}");
+                Console.WriteLine("commands (not case sensitive): ");
+                Console.WriteLine("connect to tello: C");
+                Console.WriteLine("disconnect: D");
+                Console.WriteLine("take off: T");
+                Console.WriteLine("land: L");
+                Console.WriteLine("forward: F");
+                Console.WriteLine("backward: B");
+                Console.WriteLine("toggle video: V");
+                Console.WriteLine("get battery: P");
+                Console.WriteLine("quit: Q");
+                Console.WriteLine("custom command: K");
+                Console.WriteLine("=================================");
 
                 while (true)
                 {
-                    var message = Console.ReadLine();
-                    if (message.ToLower() == "q")
+                    var message = Console.ReadKey();
+                    if (message.Key.ToString().ToLower() == "q")
                     {
                         break;
                     }
-
-                    if (message.ToLower() == "d")
+                    if(message.Key.ToString().ToLower() == "k")
+                    {
+                        Console.WriteLine("");
+                        Console.Write("enter custom command: ");
+                        var command = Console.ReadLine();
+                        if (!string.IsNullOrEmpty(command))
+                        {
+                            var request = new Request(Encoding.ASCII.GetBytes(command), false, false)
+                            {
+                                UserData = 0
+                            };
+                            client.Send(request);
+                        }
+                    }
+                    if (message.Key.ToString().ToLower() == "d")
                     {
                         client.Disconnect();
                     }
-                    if (message.ToLower() == "c")
+                    if (message.Key.ToString().ToLower() == "c")
                     {
-                        try
+                        if (!client.IsConnected)
                         {
-                            client.Connect();
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"failed to connect to udp. ex: {ex}");
-                            Console.ReadKey();
-                            return;
+                            try
+                            {
+                                client.Connect();
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"failed to connect to udp. ex: {ex}");
+                            }
                         }
 
                         //var datagram = Encoding.UTF8.GetBytes("conn_req:\x00\x00");
@@ -92,7 +118,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "t")
+                    if (message.Key.ToString().ToLower() == "t")
                     {
                         //var request = RequestFactory.GetRequest(Commands.TakeOff);
                         //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
@@ -105,7 +131,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "l")
+                    if (message.Key.ToString().ToLower() == "l")
                     {
                         //var request = new Request(new byte[] { 0xcc, 0x60, 0x00, 0x27, 0x68, 0x55, 0x00, 0xe5, 0x01, 0x00, 0xba, 0xc7 })
                         //{
@@ -118,7 +144,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "f")
+                    if (message.Key.ToString().ToLower() == "f")
                     {
                         //var request = new Request(new byte[] { 0xcc, 0x60, 0x00, 0x27, 0x68, 0x55, 0x00, 0xe5, 0x01, 0x00, 0xba, 0xc7 })
                         //{
@@ -131,7 +157,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "b")
+                    if (message.Key.ToString().ToLower() == "b")
                     {
                         //var request = new Request(new byte[] { 0xcc, 0x60, 0x00, 0x27, 0x68, 0x55, 0x00, 0xe5, 0x01, 0x00, 0xba, 0xc7 })
                         //{
@@ -144,7 +170,7 @@ namespace Udp.Sender
                         };
                         client.Send(request);
                     }
-                    if (message.ToLower() == "v")
+                    if (message.Key.ToString().ToLower() == "v")
                     {
                         //var request = RequestFactory.GetRequest(Commands.TakeOff);
                         //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
@@ -172,7 +198,7 @@ namespace Udp.Sender
                             _video = false;
                         }
                     }
-                    if (message.ToLower() == "p")
+                    if (message.Key.ToString().ToLower() == "p")
                     {
                         //var request = RequestFactory.GetRequest(Commands.TakeOff);
                         //var request = new Request(new byte[] { 0xcc, 0x58, 0x00, 0x7c, 0x68, 0x54, 0x00, 0xe4, 0x01, 0xc2, 0x16 })
@@ -198,25 +224,47 @@ namespace Udp.Sender
 
         private static void Tello_ResponseReceivedTxt(object sender, ResponseReceivedArgs e)
         {
-            var builder = new StringBuilder();
-            builder.AppendLine("==========================================");
+            //var builder = new StringBuilder();
+            //builder.AppendLine();
+            //builder.AppendLine("RESPONSE RECEIVED");
             //builder.AppendLine($"{DateTime.Now} - {e.Request.Id}::{e.Response.Id} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
-            builder.AppendLine($"{DateTime.Now} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
-            for (var i = 0; i < e.Response.Datagram.Length; ++i)
-            {
-                if (i > 0 && i % 2 == 0)
-                {
-                    builder.Append(" ");
-                }
+            //builder.AppendLine($"{DateTime.Now} - {e.Response.Datagram.Length} bytes received from {e.EndPoint.Address}:{e.EndPoint.Port}");
+            //for (var i = 0; i < e.Response.Datagram.Length; ++i)
+            //{
+            //    if (i > 0 && i % 2 == 0)
+            //    {
+            //        builder.Append(" ");
+            //    }
 
-                builder.Append(e.Response.Datagram[i].ToString("X2"));
-            }
-            builder.AppendLine();
-            builder.AppendLine("----------------------");
-            var message = Encoding.UTF8.GetString(e.Response.Datagram);
-            builder.AppendLine("message");
-            builder.AppendLine(message);
-            Console.WriteLine(builder.ToString());
+            //    builder.Append(e.Response.Datagram[i].ToString("X2"));
+            //}
+            //builder.AppendLine();
+            //builder.AppendLine("----------------------");
+            
+            var sent = Encoding.UTF8.GetString(e.Request.Datagram);
+            var received = Encoding.UTF8.GetString(e.Response.Datagram);
+            Console.WriteLine($"MESSAGE SENT: {sent}, MESSAGE RECEIVED: {received}");
+
+            //builder.AppendLine("message");
+            //builder.AppendLine(message);
+            //Console.WriteLine(builder.ToString());
+
+            Console.WriteLine("");
+            Console.WriteLine("=================================");
+            Console.WriteLine($"sending on port {8889}");
+            Console.WriteLine("commands (not case sensitive): ");
+            Console.WriteLine("connect to tello: C");
+            Console.WriteLine("disconnect: D");
+            Console.WriteLine("take off: T");
+            Console.WriteLine("land: L");
+            Console.WriteLine("forward: F");
+            Console.WriteLine("backward: B");
+            Console.WriteLine("toggle video: V");
+            Console.WriteLine("get battery: P");
+            Console.WriteLine("quit: Q");
+            Console.WriteLine("custom command: K");
+            Console.WriteLine("=================================");
+            Console.WriteLine("");
 
             //var bytes = e.Response.Datagram;
             //var cmdId = (bytes[5] | (bytes[6] << 8));

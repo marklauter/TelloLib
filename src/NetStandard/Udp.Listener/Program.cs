@@ -12,11 +12,11 @@ namespace Udp.Listener
     {
         private static void Main(string[] args)
         {
-            if (args.Length == 0)
-            {
-                Console.WriteLine("port is required arg");
-                return;
-            }
+            //if (args.Length == 0)
+            //{
+            //    Console.WriteLine("port is required arg");
+            //    return;
+            //}
 
             //var port = Int32.Parse(args[0]);
             //            Console.WriteLine($"listening on port {port}");
@@ -26,29 +26,37 @@ namespace Udp.Listener
 
         private static void Listen2()
         {
-        //    var stateReceiver = new Receiver(8890);
-        //    stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
-        //    stateReceiver.BeginReceiving();
-        //    Console.WriteLine($"listening on port 8890");
-
-            var videoReceiver = new UdpReceiver(11111);
-            videoReceiver.DatagramReceived += VideoReceiver_DatagramReceived;
-            videoReceiver.Start();
-            Console.WriteLine($"listening on port 11111");
-            Console.WriteLine("==============================================");
-            Console.WriteLine("press any key to stop");
-            Console.WriteLine("==============================================");
-            Console.WriteLine();
-            Console.ReadKey();
-            if (_stream != null)
+            var stateReceiver = new UdpReceiver(8890);
+            stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
+            stateReceiver.Start();
+            try
             {
-                _stream.Close();
-            }
+                Console.WriteLine($"listening on port 8890");
 
-            //while (true)
-            //{
-            //    await Task.Yield();
-            //}
+                //var videoReceiver = new UdpReceiver(11111);
+                //videoReceiver.DatagramReceived += VideoReceiver_DatagramReceived;
+                //videoReceiver.Start();
+                //Console.WriteLine($"listening on port 11111");
+                //if (_stream != null)
+                //{
+                //    _stream.Close();
+                //}
+
+                //while (true)
+                //{
+                //    await Task.Yield();
+                //}
+
+                Console.WriteLine("==============================================");
+                Console.WriteLine("press any key to stop");
+                Console.WriteLine("==============================================");
+                Console.WriteLine();
+                Console.ReadKey();
+            }
+            finally
+            {
+                stateReceiver.Stop();
+            }
         }
 
         private static void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)

@@ -138,11 +138,20 @@ namespace Tello.Video.UWP
             //}
 
             // this creates a buffer delay of ~ 2 to 3 seconds
+            var stopwatch = Stopwatch.StartNew();
             if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
             {
-                Debug.Write(".");
+                Debug.Write("T");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
                 args.Request.Sample.Duration = frame.Duration;
+            }
+            else
+            {
+                Debug.Write("F");
+                if(stopwatch.Elapsed > _frameTimeout)
+                {
+                    Debug.Write($" TO: {stopwatch.ElapsedMilliseconds.ToString("#,#")}ms ");
+                }
             }
             Debug.Write("-");
         }

@@ -6,16 +6,6 @@ using System.Threading.Tasks;
 
 namespace Tello.Video
 {
-    public class FrameReadyArgs
-    {
-        public FrameReadyArgs(VideoFrame frame)
-        {
-            Frame = frame;
-        }
-
-        public VideoFrame Frame { get; }
-    }
-
     internal sealed class FrameComposer
     {
         public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample)

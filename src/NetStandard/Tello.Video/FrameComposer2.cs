@@ -6,16 +6,16 @@ using System.Threading.Tasks;
 
 namespace Tello.Video
 {
-    internal sealed class FrameComposer
+    internal sealed class FrameComposer2
     {
-        public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample)
+        public FrameComposer2(double frameRate, TimeSpan bufferTime)
         {
             _frameRate = frameRate;
             _frameDuration = TimeSpan.FromSeconds(1 / _frameRate);
 
-            var bytesPerSecond = bitRate / 8;
-            var samplesPerSecond = bytesPerSecond / bytesPerSample;
-            _samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 1024));
+            //var bytesPerSecond = bitRate / 8;
+            //var samplesPerSecond = bytesPerSecond / bytesPerSample;
+            //_samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 1024));
 
             _frames = new RingBuffer<VideoFrame>((int)(_frameRate * bufferTime.TotalSeconds));
         }
@@ -25,19 +25,18 @@ namespace Tello.Video
         #region fields
         private readonly TimeSpan _frameDuration;
         private readonly double _frameRate;
-        private readonly RingBuffer<byte[]> _samples;
         private readonly RingBuffer<VideoFrame> _frames;
         #endregion
 
         #region controls
         private bool _running = false;
-        public async void Start()
+        public void Start()
         {
             if (!_running)
             {
                 _paused = false;
                 _running = true;
-                await Task.Run(() => { ComposeFrames(); });
+                //await Task.Run(() => { ComposeFrames(); });
             }
         }
 
@@ -66,67 +65,60 @@ namespace Tello.Video
             return sample.Length > 4 && sample[0] == 0x00 && sample[1] == 0x00 && sample[2] == 0x00 && sample[3] == 0x01;
         }
 
-        private VideoFrame QueueFrame(MemoryStream stream, ref long frameIndex)
+        private VideoFrame QueueFrame(MemoryStream stream, long frameIndex)
         {
             var frame = new VideoFrame(stream.ToArray(), frameIndex, TimeSpan.FromSeconds(frameIndex / _frameRate), _frameDuration);
             _frames.Push(frame);
             FrameReady?.Invoke(this, new FrameReadyArgs(frame));
-            ++frameIndex;
             return frame;
         }
 
-        private void ComposeFrames()
+
+        private long _byteCount = 0;
+        private long _frameIndex = 0;
+        private readonly Stopwatch _frameRateWatch = new Stopwatch();
+        private MemoryStream _stream = null;
+
+        private void ComposeFrame(byte[] sample)
         {
-            long byteCount = 0;
-            long frameIndex = 0;
-            MemoryStream stream = null;
-            var frameRateWatch = new Stopwatch();
-
-            var wait = new SpinWait();
-            while (_running)
+            if (_paused || !_running)
             {
-                if (_paused)
-                {
-                    wait.SpinOnce();
-                    continue;
-                }
+                return;
+            }
 
-                if (_samples.TryPop(out var sample))
+            if (IsNewFrame(sample))
+            {
+                // close out existing frame
+                if (_stream != null)
                 {
-                    if (IsNewFrame(sample))
+                    var frame = QueueFrame(_stream, _frameIndex);
+                    Interlocked.Increment(ref _frameIndex);
+                    // write a frame sample to debug output ~every 5 seconds so we can see how we're doing with performance
+                    if (_frameIndex % (_frameRate * 5) == 0)
                     {
-                        // close out existing frame
-                        if (stream != null)
-                        {
-                            var frame = QueueFrame(stream, ref frameIndex);
-                            // write a frame sample to debug output ~every 5 seconds so we can see how we're doing with performance
-                            if (frameIndex % _frameRate * 5 == 0)
-                            {
-                                Debug.WriteLine($"\n{frame.TimeIndex}: f#{frame.Index}, composition rate: {(frame.Index / frameRateWatch.Elapsed.TotalSeconds).ToString("#,#")}f/s, bit rate: {((uint)(byteCount * 8 / frame.TimeIndex.TotalSeconds)).ToString("#,#")}b/s");
-                            }
-                        }
-                        else
-                        {
-                            // first frame, so start timer
-                            frameRateWatch.Start();
-                        }
-                        stream = new MemoryStream(1024 * 16);
-                    }
-
-                    // don't start writing until we have a frame start
-                    if (stream != null)
-                    {
-                        stream.Write(sample, 0, sample.Length);
-                        byteCount += sample.Length;
+                        Debug.WriteLine($"\nFC {frame.TimeIndex}: f#{frame.Index}, composition rate: {(frame.Index / _frameRateWatch.Elapsed.TotalSeconds).ToString("#,#")}f/s, bit rate: {((uint)(_byteCount * 8 / frame.TimeIndex.TotalSeconds)).ToString("#,#")}b/s");
                     }
                 }
+                else
+                {
+                    // first frame, so start timer
+                    _frameRateWatch.Start();
+                }
+                _stream = new MemoryStream(1024 * 16);
+            }
+
+            // don't start writing until we have a frame start
+            if (_stream != null)
+            {
+                _stream.Write(sample, 0, sample.Length);
+                Interlocked.Add(ref _byteCount, sample.Length);
             }
         }
         #endregion
 
         public void AddSample(byte[] sample)
         {
-            _samples.Push(sample);
+            ComposeFrame(sample);
         }
 
         private Stopwatch _frameStopWatch = new Stopwatch();

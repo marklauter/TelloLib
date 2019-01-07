@@ -41,7 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2500000, TimeSpan.FromSeconds(1), 1460, 11111);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, 3750000, TimeSpan.FromMilliseconds(250), 1460, 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -51,13 +51,14 @@ namespace Tello.Video.UWP
                 _videoInitialized = true;
 
                 var vep = VideoEncodingProperties.CreateH264();
-                vep.Bitrate = 2500000;
+                //vep.Bitrate = 3750000;
                 vep.Height = 720;
                 vep.Width = 960;
 
                 var mss = new MediaStreamSource(new VideoStreamDescriptor(vep))
                 {
-                    IsLive = true,
+                    // never turn live on
+                    //IsLive = true,
                     BufferTime = TimeSpan.FromSeconds(0.0)
                 };
 
@@ -69,7 +70,8 @@ namespace Tello.Video.UWP
 
                 _mediaElement.SetMediaStreamSource(mss);
                 _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
-                _mediaElement.RealTimePlayback = true;
+                // never turn real time playback on
+                //_mediaElement.RealTimePlayback = true;
 
                 _frameServer.FrameReady += _frameServer_FrameReady;
 
@@ -125,8 +127,13 @@ namespace Tello.Video.UWP
         }
 
         private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(5);
+        private Stopwatch _sampleWatch = new Stopwatch();
+        private long _sampleRequestCount = 0;
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
+            if (!_sampleWatch.IsRunning)
+                _sampleWatch.Start();
+
             //Debug.Write("+");
 
             // test flush
@@ -155,12 +162,31 @@ namespace Tello.Video.UWP
 
             // test single framees
             //var stopwatch = Stopwatch.StartNew();
-            if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
+
+            var sample = _frameServer.GetSample(_frameTimeout);
+            if(sample.Count > 0)
             {
                 //Debug.Write("T");
-                args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
-                args.Request.Sample.Duration = frame.Duration;
+                args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
+                args.Request.Sample.Duration = sample.Duration;
+                if (_sampleRequestCount % 32 == 0)
+                {
+                    Debug.WriteLine($"\nSR {_sampleWatch.Elapsed} - {sample.TimeIndex}: R#{_sampleRequestCount}, sample count {sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
+                }
             }
+            ++_sampleRequestCount;
+
+            //if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
+            //{
+            //    //Debug.Write("T");
+            //    args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
+            //    args.Request.Sample.Duration = frame.Duration;
+            //    if (frame.Index % (32 * 5) == 0)
+            //    {
+            //        Debug.WriteLine($"\nSR {_sampleWatch.Elapsed} - {frame.TimeIndex}: F#{frame.Index}, R#{_sampleRequestCount}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
+            //    }
+            //}
+            //++_sampleRequestCount;
             //else
             //{
             //    Debug.Write("F");

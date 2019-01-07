@@ -24,11 +24,7 @@ namespace Tello.Video
             _gate.WithWriteLock(() =>
             {
                 _buffer[_head] = item;
-                _head = (_head + 1) % _buffer.Length;
-                if (_head == _tail)
-                {
-                    ++_tail;
-                }
+                UnsafeAdvanceHead();
             });
         }
 
@@ -43,7 +39,7 @@ namespace Tello.Video
                     _gate.WithWriteLock(() =>
                     {
                         _buffer[_tail] = default(T);
-                        _tail = (_tail + 1) % _buffer.Length;
+                        UnsafeAdvanceTail();
                     });
                 }
                 return value;
@@ -92,6 +88,20 @@ namespace Tello.Video
         #endregion
 
         #region unsafe
+        private void UnsafeAdvanceHead()
+        {
+            _head = (_head + 1) % _buffer.Length;
+            if (_head == _tail)
+            {
+                UnsafeAdvanceTail();
+            }
+        }
+
+        private void UnsafeAdvanceTail()
+        {
+            _tail = (_tail + 1) % _buffer.Length;
+        }
+
         private bool UnsafeGetIsEmpty()
         {
             return _tail == _head;

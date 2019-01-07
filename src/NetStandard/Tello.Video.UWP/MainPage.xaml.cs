@@ -94,10 +94,10 @@ namespace Tello.Video.UWP
             if (!_framesReady)
             {
                 _framesReady = true;
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                {
-                    _mediaElement.Play();
-                });
+                //await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                //{
+                //    _mediaElement.Play();
+                //});
             }
         }
 
@@ -126,10 +126,11 @@ namespace Tello.Video.UWP
             Debug.WriteLine("Mss_Starting");
         }
 
+        TimeSpan position = TimeSpan.FromSeconds(0);
         private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(5);
         private Stopwatch _sampleWatch = new Stopwatch();
         private long _sampleRequestCount = 0;
-        private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
+        private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             if (!_sampleWatch.IsRunning)
                 _sampleWatch.Start();
@@ -171,7 +172,13 @@ namespace Tello.Video.UWP
                 args.Request.Sample.Duration = sample.Duration;
                 if (_sampleRequestCount % 32 == 0)
                 {
-                    Debug.WriteLine($"\nSR {_sampleWatch.Elapsed} - {sample.TimeIndex}: R#{_sampleRequestCount}, sample count {sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
+                    await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                    {
+                        position = _mediaElement.Position;
+                        _mediaElement.Position = sample.TimeIndex;
+                    });
+
+                    Debug.WriteLine($"\nSR MSR: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {position}: R#{_sampleRequestCount}, sample count {sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
                 }
             }
             ++_sampleRequestCount;
@@ -235,10 +242,12 @@ namespace Tello.Video.UWP
                 if (e.Request.UserData == _startVideo && message.ToLower() == "ok")
                 {
                     _receivingVideo = true;
+                    _mediaElement.Play();
                 }
                 if (e.Request.UserData == _stopVideo && message.ToLower() == "ok")
                 {
                     _receivingVideo = false;
+                    _mediaElement.Stop();
                 }
                 _telloCommandReponse.Insert(0, message);
             });

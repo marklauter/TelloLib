@@ -9,39 +9,19 @@ namespace Tello.Video
             _buffer = new T[size];
         }
 
+        private readonly Gate _gate = new Gate();
         private readonly T[] _buffer;
-        private readonly object _gate = new object();
         private int _head = 0;
         private int _tail = 0;
 
-        public int Count
-        {
-            get
-            {
-                lock (_gate)
-                {
-                    var inverted = _tail > _head;
-                    return inverted
-                        ? _buffer.Length - _tail + _head
-                        : _head - _tail;
-                }
-            }
-        }
+        #region public
+        public int Count => _gate.WithReadLock(() => { return UnsafeGetSize(UnsafeGetInverted()); });
 
-        public bool IsEmpty
-        {
-            get
-            {
-                lock (_gate)
-                {
-                    return _tail == _head;
-                }
-            }
-        }
+        public bool IsEmpty => _gate.WithReadLock(() => { return UnsafeGetIsEmpty(); });
 
         public void Push(T item)
         {
-            lock (_gate)
+            _gate.WithWriteLock(() =>
             {
                 _buffer[_head] = item;
                 _head = (_head + 1) % _buffer.Length;
@@ -49,117 +29,110 @@ namespace Tello.Video
                 {
                     ++_tail;
                 }
-            }
+            });
         }
 
         public bool TryPop(out T result)
         {
-            result = default(T);
-            lock (_gate)
+            result = _gate.WithUpgradeableReadLock(() =>
             {
-                if (_tail != _head)
+                var value = default(T);
+                if (!UnsafeGetIsEmpty())
                 {
-                    result = _buffer[_tail];
-                    _buffer[_tail] = default(T);
-                    _tail = (_tail + 1) % _buffer.Length;
+                    value = _buffer[_tail];
+                    _gate.WithWriteLock(() =>
+                    {
+                        _buffer[_tail] = default(T);
+                        _tail = (_tail + 1) % _buffer.Length;
+                    });
                 }
-            }
+                return value;
+            });
             return result != null;
         }
 
         public bool TryPeek(out T result)
         {
-            if (IsEmpty)
+            result = _gate.WithReadLock(() =>
             {
-                result = default(T);
-                return false;
-            }
-
-            lock (_gate)
-            {
-                result = _buffer[_tail];
-            }
-            return true;
+                return !UnsafeGetIsEmpty()
+                    ? _buffer[_tail]
+                    : default(T);
+            });
+            return result != null;
         }
 
         public T[] Flush()
         {
-            if (IsEmpty)
+            return _gate.WithUpgradeableReadLock(() =>
             {
-                return new T[0];
-            }
-
-            lock (_gate)
-            {
-                var inverted = _tail > _head;
-                var size = inverted
-                    ? _buffer.Length - _tail + _head
-                    : _head - _tail;
-
-                var result = new T[size];
-                if (inverted)
-                {
-                    var tailToEnd = _buffer.Length - _tail;
-                    Array.Copy(_buffer, _tail, result, 0, tailToEnd);
-                    Array.Copy(_buffer, 0, result, tailToEnd, _head);
-                }
-                else
-                {
-                    Array.Copy(_buffer, _tail, result, 0, size);
-                }
-
-                Array.Clear(_buffer, 0, _buffer.Length);
-                _head = 0;
-                _tail = 0;
-
+                var result = UnsafeToArray();
+                Clear();
                 return result;
-            }
+            });
         }
 
-        public bool TryClear()
+        public void Clear()
         {
-            if (IsEmpty)
-            {
-                return false;
-            }
-
-            lock (_gate)
+            _gate.WithWriteLock(() =>
             {
                 Array.Clear(_buffer, 0, _buffer.Length);
                 _head = 0;
                 _tail = 0;
-            }
-            return true;
+            });
         }
 
         public T[] ToArray()
         {
-            if (IsEmpty)
+            return _gate.WithReadLock(() =>
+            {
+                return UnsafeToArray();
+            });
+        }
+        #endregion
+
+        #region unsafe
+        private bool UnsafeGetIsEmpty()
+        {
+            return _tail == _head;
+        }
+
+        private bool UnsafeGetInverted()
+        {
+            return _tail > _head;
+        }
+
+        private int UnsafeGetSize(bool inverted)
+        {
+            return inverted
+                ? _buffer.Length - _tail + _head
+                : _head - _tail;
+        }
+
+        private T[] UnsafeToArray()
+        {
+            if (UnsafeGetIsEmpty())
             {
                 return new T[0];
             }
 
-            lock (_gate)
+            var inverted = UnsafeGetInverted();
+            var size = UnsafeGetSize(inverted);
+
+            var result = new T[size];
+            if (inverted)
             {
-                var inverted = _tail > _head;
-                var size = inverted
-                    ? _buffer.Length - _tail + _head
-                    : _head - _tail;
-
-                var result = new T[size];
-                if (inverted)
-                {
-                    var tailToEnd = _buffer.Length - _tail;
-                    Array.Copy(_buffer, _tail, result, 0, tailToEnd);
-                    Array.Copy(_buffer, 0, result, tailToEnd, _head);
-                }
-                else
-                {
-                    Array.Copy(_buffer, _tail, result, 0, size);
-                }
-
-                return result;
+                var tailToEnd = _buffer.Length - _tail;
+                Array.Copy(_buffer, _tail, result, 0, tailToEnd);
+                Array.Copy(_buffer, 0, result, tailToEnd, _head);
             }
+            else
+            {
+                Array.Copy(_buffer, _tail, result, 0, size);
+            }
+
+            return result;
         }
+        #endregion
     }
 }

@@ -33,6 +33,19 @@ namespace Tello.Video
             }
         }
 
+        public T WithUpgradeableReadLock<T>(Func<T> func)
+        {
+            _lock.EnterUpgradeableReadLock();
+            try
+            {
+                return func.Invoke();
+            }
+            finally
+            {
+                _lock.ExitUpgradeableReadLock();
+            }
+        }
+
         public void WithUpgradeableReadLock(Action action)
         {
             _lock.EnterUpgradeableReadLock();

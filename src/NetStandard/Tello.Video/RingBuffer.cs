@@ -14,7 +14,7 @@ namespace Tello.Video
         private int _head = 0;
         private int _tail = 0;
 
-        public int Length
+        public int Count
         {
             get
             {
@@ -45,6 +45,10 @@ namespace Tello.Video
             {
                 _buffer[_head] = item;
                 _head = (_head + 1) % _buffer.Length;
+                if (_head == _tail)
+                {
+                    ++_tail;
+                }
             }
         }
 

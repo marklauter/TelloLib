@@ -9,10 +9,12 @@ namespace Tello.Video
             _buffer = new T[size];
         }
 
+        #region private
         private readonly Gate _gate = new Gate();
         private readonly T[] _buffer;
         private int _head = 0;
         private int _tail = 0;
+        #endregion
 
         #region public
         public int Count => _gate.WithReadLock(() => { return UnsafeGetSize(UnsafeGetInverted()); });

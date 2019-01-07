@@ -128,11 +128,12 @@ namespace Tello.Video
             _samples.Push(sample);
         }
 
+        private Stopwatch _frameStopWatch = new Stopwatch();
         public bool TryGetFrame(out VideoFrame frame, TimeSpan timeout)
         {
             var wait = new SpinWait();
-            var stopwatch = Stopwatch.StartNew();
-            while (!_frames.TryPop(out frame) && stopwatch.Elapsed < timeout)
+            _frameStopWatch.Restart();
+            while (!_frames.TryPop(out frame) && _frameStopWatch.Elapsed < timeout)
             {
                 wait.SpinOnce();
             }

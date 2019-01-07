@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-using Tello.Emulator;
+using Tello.Emulator.SDKV2;
 
 namespace Tello.EmulatorConsole
 {

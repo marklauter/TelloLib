@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Tello.Emulator
+namespace Tello.Emulator.SDKV2
 {
     internal class CommandInterpreter
     {

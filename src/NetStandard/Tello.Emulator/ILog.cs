@@ -1,4 +1,4 @@
-﻿namespace Tello.Emulator
+﻿namespace Tello.Emulator.SDKV2
 {
     public interface ILog
     {

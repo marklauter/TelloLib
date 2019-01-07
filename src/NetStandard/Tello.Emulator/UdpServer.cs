@@ -2,7 +2,7 @@
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace Tello.Emulator
+namespace Tello.Emulator.SDKV2
 {
     internal abstract class UdpServer
     {

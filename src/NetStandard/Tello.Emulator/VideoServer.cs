@@ -1,4 +1,4 @@
-﻿namespace Tello.Emulator
+﻿namespace Tello.Emulator.SDKV2
 {
     internal sealed class VideoServer : UdpServer
     {

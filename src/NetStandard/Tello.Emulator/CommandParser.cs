@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Tello.Emulator
+namespace Tello.Emulator.SDKV2
 {
     internal enum Commands
     {

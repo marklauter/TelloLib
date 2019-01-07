@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Threading.Tasks;
 
-namespace Tello.Emulator
+namespace Tello.Emulator.SDKV2
 {
     internal sealed class StateServer : UdpServer
     {

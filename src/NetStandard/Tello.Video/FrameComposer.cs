@@ -11,12 +11,11 @@ namespace Tello.Video
         public FrameComposer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample)
         {
             _frameRate = frameRate;
-
             _frameDuration = TimeSpan.FromSeconds(1 / _frameRate);
 
             var bytesPerSecond = bitRate / 8;
             var samplesPerSecond = bytesPerSecond / bytesPerSample;
-            _samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 2));
+            _samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 1024));
 
             _frames = new RingBuffer<VideoFrame>((int)(_frameRate * bufferTime.TotalSeconds));
         }
@@ -83,10 +82,12 @@ namespace Tello.Video
             MemoryStream stream = null;
             var frameRateWatch = new Stopwatch();
 
+            var wait = new SpinWait();
             while (_running)
             {
                 if (_paused)
                 {
+                    wait.SpinOnce();
                     continue;
                 }
 

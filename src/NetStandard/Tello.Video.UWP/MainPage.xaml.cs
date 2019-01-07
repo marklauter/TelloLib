@@ -41,7 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2500000, TimeSpan.FromSeconds(0.5), 1460, 11111);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(30, 2500000, TimeSpan.FromSeconds(1), 1460, 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -51,7 +51,7 @@ namespace Tello.Video.UWP
                 _videoInitialized = true;
 
                 var vep = VideoEncodingProperties.CreateH264();
-                //vep.Bitrate = 2400000;
+                vep.Bitrate = 2500000;
                 vep.Height = 720;
                 vep.Width = 960;
 
@@ -69,7 +69,7 @@ namespace Tello.Video.UWP
 
                 _mediaElement.SetMediaStreamSource(mss);
                 _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
-                //_mediaElement.RealTimePlayback = true;
+                _mediaElement.RealTimePlayback = true;
 
                 _frameServer.FrameReady += _frameServer_FrameReady;
 
@@ -124,10 +124,10 @@ namespace Tello.Video.UWP
             Debug.WriteLine("Mss_Starting");
         }
 
-        private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(2);
+        private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(5);
         private void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
-            Debug.Write("+");
+            //Debug.Write("+");
 
             // test flush
             //var frames = _frameServer.ReadAllFrames();
@@ -154,23 +154,23 @@ namespace Tello.Video.UWP
             //}
 
             // test single framees
-            var stopwatch = Stopwatch.StartNew();
+            //var stopwatch = Stopwatch.StartNew();
             if (_frameServer.TryReadFrame(out var frame, _frameTimeout))
             {
-                Debug.Write("T");
+                //Debug.Write("T");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(frame.Content.AsBuffer(), frame.TimeIndex);
                 args.Request.Sample.Duration = frame.Duration;
             }
-            else
-            {
-                Debug.Write("F");
-                if (stopwatch.Elapsed > _frameTimeout)
-                {
-                    Debug.Write($" TO: {stopwatch.ElapsedMilliseconds.ToString("#,#")}ms ");
-                }
-            }
+            //else
+            //{
+            //    Debug.Write("F");
+            //    if (stopwatch.Elapsed > _frameTimeout)
+            //    {
+            //        Debug.Write($" TO: {stopwatch.ElapsedMilliseconds.ToString("#,#")}ms ");
+            //    }
+            //}
 
-            Debug.Write("-");
+            //Debug.Write("-");
         }
         #endregion
 

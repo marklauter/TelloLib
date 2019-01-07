@@ -57,13 +57,14 @@ namespace Tello.Video
             SampleReady?.Invoke(this, new SampleReadyArgs(e.Datagram));
         }
 
+        private readonly Stopwatch _sampleStopwatch = new Stopwatch();
         public bool TryGetSample(out byte[] sample, TimeSpan timeout)
         {
-            var spin = new SpinWait();
-            var stopwatch = Stopwatch.StartNew();
-            while (!_samples.TryPop(out sample) && stopwatch.Elapsed < timeout)
+            var wait = new SpinWait();
+            _sampleStopwatch.Restart();
+            while (!_samples.TryPop(out sample) && _sampleStopwatch.Elapsed < timeout)
             {
-                spin.SpinOnce();
+                wait.SpinOnce();
             }
             return sample != null;
         }

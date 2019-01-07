@@ -18,6 +18,8 @@ namespace Tello.Video
             _frameComposer.FrameReady += _frameComposer_FrameReady;
         }
 
+        //private readonly FrameComposer _frameComposer;
+        //private readonly FrameComposer2 _frameComposer;
         private readonly FrameComposer3 _frameComposer;
         private readonly UdpReceiver _udpReceiver;
 

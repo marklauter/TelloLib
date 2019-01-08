@@ -126,16 +126,17 @@ namespace Tello.Video.UWP
             Debug.WriteLine("Mss_Starting");
         }
 
-        TimeSpan position = TimeSpan.FromSeconds(0);
+        TimeSpan _mediaPosition = TimeSpan.FromSeconds(0);
         private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(5);
         private Stopwatch _sampleWatch = new Stopwatch();
         private long _sampleRequestCount = 0;
+
         private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             if (!_sampleWatch.IsRunning)
                 _sampleWatch.Start();
 
-            //Debug.Write("+");
+            Debug.Write("+");
 
             // test flush
             //var frames = _frameServer.ReadAllFrames();
@@ -165,20 +166,20 @@ namespace Tello.Video.UWP
             //var stopwatch = Stopwatch.StartNew();
 
             var sample = _frameServer.GetSample(_frameTimeout);
-            if(sample.Count > 0)
+            if(sample!= null && sample.Count > 0)
             {
-                //Debug.Write("T");
+                Debug.Write("T");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
                 args.Request.Sample.Duration = sample.Duration;
-                if (_sampleRequestCount % 32 == 0)
+                if (_sampleRequestCount % 16 == 0)
                 {
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
-                        position = _mediaElement.Position;
+                        _mediaPosition = _mediaElement.Position;
                         _mediaElement.Position = sample.TimeIndex;
                     });
 
-                    Debug.WriteLine($"\nSR MSR: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {position}: R#{_sampleRequestCount}, sample count {sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
+                    Debug.WriteLine($"\nSR MSR: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {_mediaPosition}, R#{_sampleRequestCount}, S#{sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
                 }
             }
             ++_sampleRequestCount;
@@ -203,7 +204,7 @@ namespace Tello.Video.UWP
             //    }
             //}
 
-            //Debug.Write("-");
+            Debug.Write("-");
         }
         #endregion
 

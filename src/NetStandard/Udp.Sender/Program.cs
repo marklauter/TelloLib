@@ -32,9 +32,9 @@ namespace Udp.Sender
         private static void TestTelloUdp2TelloTxt()
         {
             // real tello
-            using (var client = new UdpTransceiver("192.168.10.1", 8889))
+            //using (var client = new UdpTransceiver("192.168.10.1", 8889))
             // emulated tello
-            //using (var client = new UdpTransceiver("127.0.0.1", 8889))
+            using (var client = new UdpTransceiver("127.0.0.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceivedTxt;
 

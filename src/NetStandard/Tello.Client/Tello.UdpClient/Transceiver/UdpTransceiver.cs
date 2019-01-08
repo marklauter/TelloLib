@@ -7,9 +7,9 @@ using System.Net.Sockets;
 
 namespace Tello.Udp
 {
-    public class Transceiver : IDisposable
+    public class UdpTransceiver : IDisposable
     {
-        public Transceiver(string ip, int port) : base()
+        public UdpTransceiver(string ip, int port) : base()
         {
             if (String.IsNullOrEmpty(ip))
             {

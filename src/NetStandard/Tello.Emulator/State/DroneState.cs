@@ -1,14 +1,56 @@
-﻿namespace Tello.Emulator.SDKV2
+﻿using System;
+
+namespace Tello.Emulator.SDKV2
 {
     //https://dl-cdn.ryzerobotics.com/downloads/Tello/Tello%20SDK%202.0%20User%20Guide.pdf
-    internal class DroneState
+
+    internal sealed class DroneState
     {
         /// <summary>
         /// speed in cm/s
         /// </summary>
         public int Speed { get; set; } = 10;
 
-        #region Mission Padd
+        public void TakeOff()
+        {
+            if (!IsFlying)
+            {
+                IsFlying = true;
+                TakeoffTime = DateTime.Now;
+                Height = 20;
+            }
+        }
+
+        public void Land()
+        {
+            if (IsFlying)
+            {
+                IsFlying = false;
+                Height = 0;
+            }
+        }
+
+        public void StartVideo()
+        {
+            IsVideoOn = true;
+        }
+
+        public void StopVideo()
+        {
+            IsVideoOn = false;
+        }
+
+        public void ActivateSdkMode()
+        {
+            IsSdkModeActivated = true;
+        }
+
+        public bool IsSdkModeActivated { get; private set; } = false;
+        public bool IsVideoOn { get; private set; } = false;
+        public bool IsFlying { get; private set; } = false;
+        public DateTime TakeoffTime { get; private set; }
+
+        #region Mission Pad
         //[JsonProperty("mid")]
         //public int MissionPadDected { get; set; } = -1;
 
@@ -22,6 +64,7 @@
         //public double MissionPadZ { get; set; } = 0;
         #endregion
 
+        #region Reportable State
         public int Pitch { get; set; } = 0;
 
         public int Roll { get; set; } = 0;
@@ -85,5 +128,6 @@
         {
             return $"pitch:{Pitch};roll:{Roll};yaw:{Yaw};vgx:{XSpeed};vgy:{YSpeed};vgz:{ZSpeed};templ:{TemperatureLow};temph:{TemperatureHigh};tof:{TimeOfFlight};h:{Height};bat:{BatteryPercentage};baro:{BarometricPressure.ToString("F2")};time:{MotorTime};agx:{AccelerationX.ToString("F2")};agy:{AccelerationY.ToString("F2")};agz:{AccelerationZ.ToString("F2")};\r\n";
         }
+        #endregion
     }
 }

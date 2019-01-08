@@ -17,10 +17,7 @@ namespace Tello.Emulator.SDKV2
         private readonly VideoServer _videoServer;
         private readonly StateServer _stateServer;
 
-        private bool _inSDKMode = false;
         private bool _inMissionPadMode = false;
-        private bool _flying = false;
-        private DateTime _takeoffTime = DateTime.Now;
 
         private readonly string _ok = "ok";
         private readonly string _error = "error";
@@ -30,7 +27,7 @@ namespace Tello.Emulator.SDKV2
             try
             {
                 var command = CommandParser.GetCommand(message);
-                if (!_inSDKMode && command != Commands.EnterSdkMode)
+                if (!_droneState.IsSdkModeActivated && command != Commands.EnterSdkMode)
                 {
                     Log($"{nameof(CommandInterpreter)} - not in SDK mode. Message ignored: {message}");
                     return null;
@@ -40,29 +37,35 @@ namespace Tello.Emulator.SDKV2
                 switch (command)
                 {
                     case Commands.EnterSdkMode:
-                        if (!_inSDKMode)
+                        if (!_droneState.IsSdkModeActivated)
                         {
-                            _inSDKMode = true;
+                            _droneState.ActivateSdkMode();
                             _stateServer.Start();
                             return _ok;
                         }
                         return null;
                     case Commands.Takeoff:
-                        _takeoffTime = DateTime.Now;
-                        _droneState.Height = 20;
-                        _flying = true;
+                        _droneState.TakeOff();
                         return _ok;
                     case Commands.Land:
-                        _droneState.Height = 0;
-                        _flying = false;
+                        _droneState.Land();
                         return _ok;
                     case Commands.StartVideo:
-                        _videoServer.Start();
+                        if (!_droneState.IsVideoOn)
+                        {
+                            _droneState.StartVideo();
+                            _videoServer.Start();
+                        }
                         return _ok;
                     case Commands.StopVideo:
-                        _videoServer.Stop();
+                        if (_droneState.IsVideoOn)
+                        {
+                            _videoServer.Stop();
+                            _droneState.StopVideo();
+                        }
                         return _ok;
                     case Commands.Stop:
+                        return _ok;
                     case Commands.EmergencyStop:
                         return _ok;
                     case Commands.Up:

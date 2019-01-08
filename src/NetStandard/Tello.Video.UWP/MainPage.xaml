@@ -34,7 +34,7 @@
         </StackPanel>
         
         <StackPanel Grid.Row="3" BorderThickness="5" BorderBrush="DarkKhaki">
-            <MediaElement x:Name="_mediaElement" AreTransportControlsEnabled="True" Height="720" AutoPlay="False"/>
+            <MediaElement x:Name="_mediaElement" AreTransportControlsEnabled="True" Height="720" AutoPlay="True"/>
         </StackPanel>
     </Grid>
 </Page>

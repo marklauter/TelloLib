@@ -136,7 +136,7 @@ namespace Tello.Video.UWP
             if (!_sampleWatch.IsRunning)
                 _sampleWatch.Start();
 
-            Debug.Write("+");
+            //Debug.Write("+");
 
             // test flush
             //var frames = _frameServer.ReadAllFrames();
@@ -168,10 +168,10 @@ namespace Tello.Video.UWP
             var sample = _frameServer.GetSample(_frameTimeout);
             if(sample!= null && sample.Count > 0)
             {
-                Debug.Write("T");
+                //Debug.Write("T");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
                 args.Request.Sample.Duration = sample.Duration;
-                if (_sampleRequestCount % 16 == 0)
+                if (_sampleRequestCount % 32 == 0)
                 {
                     await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
@@ -179,7 +179,7 @@ namespace Tello.Video.UWP
                         _mediaElement.Position = sample.TimeIndex;
                     });
 
-                    Debug.WriteLine($"\nSR MSR: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {_mediaPosition}, R#{_sampleRequestCount}, S#{sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}R/s");
+                    Debug.WriteLine($"\nRQT: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {_mediaPosition}, RQCNT{_sampleRequestCount}, SCNT{sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}RQ/s");
                 }
             }
             ++_sampleRequestCount;
@@ -204,7 +204,7 @@ namespace Tello.Video.UWP
             //    }
             //}
 
-            Debug.Write("-");
+            //Debug.Write("-");
         }
         #endregion
 

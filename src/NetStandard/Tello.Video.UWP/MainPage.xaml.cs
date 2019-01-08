@@ -28,7 +28,7 @@ namespace Tello.Video.UWP
         // emulated tello
         private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
         private readonly UdpLoopbackReceiver _stateReceiver = new UdpLoopbackReceiver("127.0.0.1", 8890);
-        private readonly VideoFrameLoopbackServer _frameServer = new VideoFrameLoopbackServer(32, TimeSpan.FromMilliseconds(500), "127.0.0.1", 11111);
+        private readonly VideoFrameLoopbackServer _frameServer = new VideoFrameLoopbackServer(32, TimeSpan.FromSeconds(1), "127.0.0.1", 11111);
 #else
         // real tello
         private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
@@ -195,7 +195,7 @@ namespace Tello.Video.UWP
                         _mediaElement.Position = sample.TimeIndex;
                     });
 
-                    Debug.WriteLine($"\nRQT: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {_mediaPosition}, RQCNT{_sampleRequestCount}, SCNT{sample.Count}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}RQ/s");
+                    Debug.WriteLine($"\nRQT: {_sampleWatch.Elapsed} - STI: {sample.TimeIndex} - MEP: {_mediaPosition}, RQCNT: {_sampleRequestCount}, SCNT: {sample.Count}, SDUR: {sample.Duration}, {(uint)(_sampleRequestCount / _sampleWatch.Elapsed.TotalSeconds)}RQ/s");
                 }
             }
             ++_sampleRequestCount;

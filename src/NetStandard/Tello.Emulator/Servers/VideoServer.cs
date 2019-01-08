@@ -19,13 +19,14 @@ namespace Tello.Emulator.SDKV2
         }
 
 
+        private readonly TimeSpan _wait = TimeSpan.FromMilliseconds(2.4);
         protected override Task<byte[]> GetDatagram()
         {
             var sampleDef = _sampleDefs[_sampleIndex];
 
             // sleep to simulate Tello's actual sample rate
             //await Task.Delay(TimeSpan.FromMilliseconds(1));
-            Thread.Sleep(2);
+            Thread.Sleep(_wait);
 
             // get the video sample 
             var sample = new byte[sampleDef.Length];

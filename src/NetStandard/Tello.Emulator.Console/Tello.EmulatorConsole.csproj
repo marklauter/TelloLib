@@ -6,6 +6,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="AppData\tello.samples.json" />
+    <None Remove="AppData\tello.video" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="AppData\tello.samples.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="AppData\tello.video">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Tello.Client\Tello.UdpClient\Tello.Udp.csproj" />
     <ProjectReference Include="..\Tello.Emulator\Tello.Emulator.SDKV2.csproj" />
   </ItemGroup>

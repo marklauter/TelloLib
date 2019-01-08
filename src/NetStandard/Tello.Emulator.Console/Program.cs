@@ -1,10 +1,14 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Diagnostics;
+using System.IO;
+using System.Text;
 using Tello.Emulator.SDKV2;
+using Tello.Emulator.SDKV2.Video;
 
 namespace Tello.EmulatorConsole
 {
-    class Log : ILog
+    internal class Log : ILog
     {
         public void Write(string message)
         {
@@ -19,12 +23,39 @@ namespace Tello.EmulatorConsole
         }
     }
 
-    class Program
+    internal class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Console.WriteLine("Tello SDK V2.0 Emulator");
-            var drone = new Drone(new Log());
+
+            byte[] videoData = null;
+            var videoFile = new FileStream("./AppData/tello.video", FileMode.Open);
+            try
+            {
+                videoData = new byte[videoFile.Length];
+                videoFile.Read(videoData, 0, videoData.Length);
+            }
+            finally
+            {
+                videoFile.Close();
+            }
+
+            Sample[] sampleDefs = null;
+            var sampleDefsFile = new FileStream("./AppData/tello.samples.json", FileMode.Open);
+            try
+            {
+                var sampleDefsData = new byte[sampleDefsFile.Length];
+                sampleDefsFile.Read(sampleDefsData, 0, sampleDefsData.Length);
+                var sampleDefsJson = Encoding.UTF8.GetString(sampleDefsData);
+                sampleDefs = JsonConvert.DeserializeObject<Sample[]>(sampleDefsJson);
+            }
+            finally
+            {
+                sampleDefsFile.Close();
+            }
+
+            var drone = new Drone(new Log(), videoData, sampleDefs);
             drone.PowerOn();
 
             Console.WriteLine("press any key to quit");

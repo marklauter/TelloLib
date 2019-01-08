@@ -1,26 +1,25 @@
 ﻿using System;
-using System.Diagnostics;
 using Tello.Udp;
-using Windows.Media.Core;
 
 namespace Tello.Video
 {
     public sealed class VideoFrameServer
     {
-        public VideoFrameServer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample = 1460, int port = 11111)
+        //public VideoFrameServer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample = 1460, int port = 11111)
+        public VideoFrameServer(double frameRate, TimeSpan bufferTime, int port = 11111)
         {
             _udpReceiver = new UdpReceiver(port);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             //_frameComposer = new FrameComposer(frameRate, bitRate, bufferTime, bytesPerSample);
-            //_frameComposer = new FrameComposer2(frameRate, bufferTime);
-            _frameComposer = new FrameComposer3(frameRate);
+            _frameComposer = new FrameComposer2(frameRate, bufferTime);
+            //_frameComposer = new FrameComposer3(frameRate);
             _frameComposer.FrameReady += _frameComposer_FrameReady;
         }
 
         //private readonly FrameComposer _frameComposer;
-        //private readonly FrameComposer2 _frameComposer;
-        private readonly FrameComposer3 _frameComposer;
+        private readonly FrameComposer2 _frameComposer;
+        //private readonly FrameComposer3 _frameComposer;
         private readonly UdpReceiver _udpReceiver;
 
         public event EventHandler<FrameReadyArgs> FrameReady;
@@ -64,49 +63,10 @@ namespace Tello.Video
             return _frameComposer.GetFrames(timeout);
         }
 
-        //public bool TryReadFrame(out VideoFrame frame, TimeSpan timeout)
-        //{
-        //    return _frameComposer.TryGetFrame(out frame, timeout);
-        //}
-
-        //public VideoFrameCollection ReadFrames(MediaStreamSourceSampleRequest request, TimeSpan timeout, int maxFrameCount)
-        //{
-        //    var stopwatch = Stopwatch.StartNew();
-        //    var collection = new VideoFrameCollection();
-
-        //    while (collection.Count < maxFrameCount && stopwatch.Elapsed < timeout && _frameComposer.TryGetFrame(out var frame, timeout))
-        //    {
-        //        collection.Add(frame);
-        //        var progress = (uint)(collection.Count / maxFrameCount * 100);
-        //        request.ReportSampleProgress(progress);
-        //    }
-
-        //    if (stopwatch.ElapsedMilliseconds > collection.Duration.TotalMilliseconds)
-        //    {
-        //        Debug.WriteLine($"ReadFrames: took too long! process duration: {stopwatch.ElapsedMilliseconds}ms, sample duration: {collection.Duration.TotalMilliseconds}ms");
-        //    }
-
-        //    return collection;
-        //}
-
-        //public VideoFrameCollection ReadAllFrames()
-        //{
-        //    var stopwatch = Stopwatch.StartNew();
-        //    var frames = _frameComposer.FlushBuffer();
-        //    if (frames != null && frames.Length > 0)
-        //    {
-        //        var collection = new VideoFrameCollection(frames);
-        //        if (stopwatch.ElapsedMilliseconds > collection.Duration.TotalMilliseconds)
-        //        {
-        //            Debug.WriteLine($"ReadAllFrames: took too long! process duration: {stopwatch.ElapsedMilliseconds}ms, sample duration: {collection.Duration.TotalMilliseconds}ms");
-        //        }
-        //        return collection;
-        //    }
-        //    else
-        //    {
-        //        return null;
-        //    }
-        //}
+        public bool TryReadFrame(out VideoFrame frame, TimeSpan timeout)
+        {
+            return _frameComposer.TryGetFrame(out frame, timeout);
+        }
     }
 }
 

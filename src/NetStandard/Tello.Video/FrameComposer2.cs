@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Tello.Video
 {
+    /// <summary>
+    /// FrameComposer2 is the best of the three versions
+    /// </summary>
     internal sealed class FrameComposer2
     {
         public FrameComposer2(double frameRate, TimeSpan bufferTime)
@@ -13,16 +16,16 @@ namespace Tello.Video
             _frameRate = frameRate;
             _frameDuration = TimeSpan.FromSeconds(1 / _frameRate);
 
-            //var bytesPerSecond = bitRate / 8;
-            //var samplesPerSecond = bytesPerSecond / bytesPerSample;
-            //_samples = new RingBuffer<byte[]>((int)(samplesPerSecond * bufferTime.TotalSeconds * 1024));
-
             _frames = new RingBuffer<VideoFrame>((int)(_frameRate * bufferTime.TotalSeconds));
         }
 
         public event EventHandler<FrameReadyArgs> FrameReady;
 
         #region fields
+        private long _byteCount = 0;
+        private long _frameIndex = 0;
+        private readonly Stopwatch _frameRateWatch = new Stopwatch();
+        private MemoryStream _stream = null;
         private readonly TimeSpan _frameDuration;
         private readonly double _frameRate;
         private readonly RingBuffer<VideoFrame> _frames;
@@ -36,7 +39,6 @@ namespace Tello.Video
             {
                 _paused = false;
                 _running = true;
-                //await Task.Run(() => { ComposeFrames(); });
             }
         }
 
@@ -72,12 +74,6 @@ namespace Tello.Video
             FrameReady?.Invoke(this, new FrameReadyArgs(frame));
             return frame;
         }
-
-
-        private long _byteCount = 0;
-        private long _frameIndex = 0;
-        private readonly Stopwatch _frameRateWatch = new Stopwatch();
-        private MemoryStream _stream = null;
 
         private void ComposeFrame(byte[] sample)
         {
@@ -121,21 +117,21 @@ namespace Tello.Video
             ComposeFrame(sample);
         }
 
+        internal VideoFrameCollection GetFrames(TimeSpan timeout)
+        {
+            return new VideoFrameCollection(_frames.Flush());
+        }
+
         private Stopwatch _frameStopWatch = new Stopwatch();
+        SpinWait _frameWait = new SpinWait();
         public bool TryGetFrame(out VideoFrame frame, TimeSpan timeout)
         {
-            var wait = new SpinWait();
             _frameStopWatch.Restart();
             while (!_frames.TryPop(out frame) && _frameStopWatch.Elapsed < timeout)
             {
-                wait.SpinOnce();
+                _frameWait.SpinOnce();
             }
             return frame != null;
-        }
-
-        public VideoFrame[] FlushBuffer()
-        {
-            return _frames.Flush();
         }
     }
 }

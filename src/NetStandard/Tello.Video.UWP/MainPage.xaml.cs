@@ -41,7 +41,7 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, 3750000, TimeSpan.FromMilliseconds(250), 1460, 11111);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, TimeSpan.FromMilliseconds(500), 11111);
 
         private bool _videoInitialized = false;
         private void InitializeVideo()
@@ -69,7 +69,7 @@ namespace Tello.Video.UWP
                 //mss.SwitchStreamsRequested += Mss_SwitchStreamsRequested;
 
                 _mediaElement.SetMediaStreamSource(mss);
-                _mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
+                //_mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
                 // never turn real time playback on
                 //_mediaElement.RealTimePlayback = true;
 
@@ -79,10 +79,10 @@ namespace Tello.Video.UWP
             }
         }
 
-        private void _mediaElement_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
-        {
-            Debug.WriteLine($"\n_mediaElement_BufferingProgressChanged: {(100 *_mediaElement.BufferingProgress).ToString("F1")}%");
-        }
+        //private void _mediaElement_BufferingProgressChanged(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        //{
+        //    Debug.WriteLine($"\n_mediaElement_BufferingProgressChanged: {(100 *_mediaElement.BufferingProgress).ToString("F1")}%");
+        //}
 
         private bool _framesReady = false;
         private async void _frameServer_FrameReady(object sender, FrameReadyArgs e)
@@ -94,10 +94,10 @@ namespace Tello.Video.UWP
             if (!_framesReady)
             {
                 _framesReady = true;
-                //await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-                //{
-                //    _mediaElement.Play();
-                //});
+                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                {
+                    _mediaElement.Play();
+                });
             }
         }
 
@@ -226,7 +226,7 @@ namespace Tello.Video.UWP
 
         #region tello commands
 
-        private readonly Transceiver _tello = new Transceiver("192.168.10.1", 8889);
+        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
 
         private ObservableCollection<string> _telloCommandReponse = new ObservableCollection<string>();
 
@@ -242,7 +242,6 @@ namespace Tello.Video.UWP
                 if (e.Request.UserData == _startVideo && message.ToLower() == "ok")
                 {
                     _receivingVideo = true;
-                    _mediaElement.Play();
                 }
                 if (e.Request.UserData == _stopVideo && message.ToLower() == "ok")
                 {

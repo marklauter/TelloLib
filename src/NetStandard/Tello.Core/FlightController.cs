@@ -20,14 +20,14 @@ namespace Tello.Core
 
         public FlightController()
         {
-            _client = new Transceiver(IP, PORT);
+            _client = new UdpTransceiver(IP, PORT);
             _client.ResponseReceived += _client_ResponseReceived;
         }
 
         private const string IP = "192.168.10.1";
         private const int PORT = 8889;
 
-        private readonly Transceiver _client;
+        private readonly UdpTransceiver _client;
         private readonly ConcurrentDictionary<Guid, Request> _requests = new ConcurrentDictionary<Guid, Request>();
         private ConnectionStates _connectionState = ConnectionStates.Disconnected;
         public ConnectionStates ConnectionState

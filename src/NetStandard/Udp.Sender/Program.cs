@@ -32,19 +32,11 @@ namespace Udp.Sender
         private static void TestTelloUdp2TelloTxt()
         {
             // real tello
-            //using (var client = new Transceiver("192.168.10.1", 8889))
+            using (var client = new UdpTransceiver("192.168.10.1", 8889))
             // emulated tello
-            using (var client = new UdpTransceiver("127.0.0.1", 8889))
+            //using (var client = new UdpTransceiver("127.0.0.1", 8889))
             {
                 client.ResponseReceived += Tello_ResponseReceivedTxt;
-                try
-                {
-                    client.Connect();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"failed to connect to udp. ex: {ex}");
-                }
 
                 Console.WriteLine("");
                 Console.WriteLine("=================================");
@@ -71,8 +63,7 @@ namespace Udp.Sender
                     }
                     if(message.Key.ToString().ToLower() == "k")
                     {
-                        Console.WriteLine("");
-                        Console.Write("enter custom command: ");
+                        Console.Write("\renter custom command: ");
                         var command = Console.ReadLine();
                         if (!string.IsNullOrEmpty(command))
                         {
@@ -89,6 +80,7 @@ namespace Udp.Sender
                     }
                     if (message.Key.ToString().ToLower() == "c")
                     {
+                        Console.WriteLine("\rconnecting...");
                         if (!client.IsConnected)
                         {
                             try
@@ -111,12 +103,12 @@ namespace Udp.Sender
                         };
                         client.Send(request);
 
-                        Task.Delay(1000 * 10);
-                        request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
-                        {
-                            UserData = 6
-                        };
-                        client.Send(request);
+                        //await Task.Delay(1000 * 10);
+                        //request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false)
+                        //{
+                        //    UserData = 6
+                        //};
+                        //client.Send(request);
                     }
                     if (message.Key.ToString().ToLower() == "t")
                     {
@@ -179,7 +171,7 @@ namespace Udp.Sender
                         //};
                         if (!_video)
                         {
-                            Console.WriteLine("enabling video capture");
+                            Console.WriteLine("\renabling video capture");
                             var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
                             {
                                 UserData = 5
@@ -189,7 +181,7 @@ namespace Udp.Sender
                         }
                         else
                         {
-                            Console.WriteLine("disabling video capture");
+                            Console.WriteLine("\rdisabling video capture");
                             var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false)
                             {
                                 UserData = 5

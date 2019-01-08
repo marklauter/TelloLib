@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -13,6 +16,8 @@ using Windows.UI.Xaml.Navigation;
 //https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/process-media-frames-with-mediaframereader
 //https://github.com/Microsoft/Windows-universal-samples/blob/dev/Samples/SimpleCommunication/cs/CaptureDevice.cs
 
+//https://stackoverflow.com/questions/33259763/uwp-enable-local-network-loopback
+
 namespace Tello.Video.UWP
 {
     /// <summary>
@@ -20,6 +25,11 @@ namespace Tello.Video.UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        // real tello
+        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
+        // emulated tello
+        //private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
+
         #region ctor
         public MainPage()
         {
@@ -32,6 +42,7 @@ namespace Tello.Video.UWP
             _stateReceiver.Start();
             Debug.WriteLine($"state receiver listening on port 8890");
 
+            _frameServer.FrameReady += _frameServer_FrameReady;
             _frameServer.Start();
         }
 
@@ -75,8 +86,6 @@ namespace Tello.Video.UWP
                 //_mediaElement.BufferingProgressChanged += _mediaElement_BufferingProgressChanged;
                 // never turn real time playback on
                 //_mediaElement.RealTimePlayback = true;
-
-                _frameServer.FrameReady += _frameServer_FrameReady;
 
                 Debug.WriteLine("media element initialized");
             }
@@ -223,11 +232,6 @@ namespace Tello.Video.UWP
 
         #region tello commands
 
-        // real tello
-        //private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
-        // emulated tello
-        private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
-
         private ObservableCollection<string> _telloCommandReponse = new ObservableCollection<string>();
 
         private const int _startVideo = 999;
@@ -252,7 +256,7 @@ namespace Tello.Video.UWP
             });
         }
 
-        private void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "connecting to tello");
             try

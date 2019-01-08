@@ -17,9 +17,8 @@ namespace Tello.Emulator.SDKV2
         {
             // 5Hz state reporting
             await Task.Delay(200);
-            var state = _droneState.ToString();
-            //Debug.WriteLine(state);
-            return Encoding.UTF8.GetBytes(state);
+            await Task.Delay(200);
+            return Encoding.UTF8.GetBytes(_droneState.ToString());
         }
     }
 }

@@ -28,17 +28,16 @@ namespace Tello.Emulator.SDKV2
 
         public string Interpret(string message)
         {
-            if (!_inSDKMode && message != "command")
-            {
-                Log($"{nameof(CommandInterpreter)} - not in SDK mode. message ignored: {message}");
-                return null;
-            }
-            Log($"{nameof(CommandInterpreter)} - message received: {message}");
-
             try
             {
                 var command = CommandParser.GetCommand(message);
-                Log($"{nameof(CommandInterpreter)} - command identified: {command}");
+                if (!_inSDKMode && command != Commands.EnterSdkMode)
+                {
+                    Log($"{nameof(CommandInterpreter)} - not in SDK mode. Message ignored: {message}");
+                    return null;
+                }
+                Log($"{nameof(CommandInterpreter)} - message received: {message}, command identified: {command}");
+
                 switch (command)
                 {
                     case Commands.EnterSdkMode:

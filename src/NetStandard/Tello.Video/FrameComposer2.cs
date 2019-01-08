@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Tello.Video
 {
@@ -117,13 +116,23 @@ namespace Tello.Video
             ComposeFrame(sample);
         }
 
+        private Stopwatch _framesStopWatch = new Stopwatch();
+        private SpinWait _framesWait = new SpinWait();
         internal VideoFrameCollection GetFrames(TimeSpan timeout)
         {
-            return new VideoFrameCollection(_frames.Flush());
+            _framesStopWatch.Restart();
+            while (_frames.Count == 0 && _framesStopWatch.Elapsed < timeout)
+            {
+                _framesWait.SpinOnce();
+            }
+            var frames = _frames.Flush();
+            return frames != null && frames.Length > 0
+                ? new VideoFrameCollection(frames)
+                : null;
         }
 
         private Stopwatch _frameStopWatch = new Stopwatch();
-        SpinWait _frameWait = new SpinWait();
+        private SpinWait _frameWait = new SpinWait();
         public bool TryGetFrame(out VideoFrame frame, TimeSpan timeout)
         {
             _frameStopWatch.Restart();

@@ -28,7 +28,10 @@ namespace Tello.Video.UWP
             _commandResponseListView.ItemsSource = _telloCommandReponse;
             _tello.ResponseReceived += _tello_ResponseReceived;
 
-            StartStateReciever();
+            _stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
+            _stateReceiver.Start();
+            Debug.WriteLine($"state receiver listening on port 8890");
+
             _frameServer.Start();
         }
 
@@ -212,13 +215,6 @@ namespace Tello.Video.UWP
 
         private readonly UdpReceiver _stateReceiver = new UdpReceiver(8890);
 
-        private void StartStateReciever()
-        {
-            _stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
-            _stateReceiver.Start();
-            Debug.WriteLine($"state receiver listening on port 8890");
-        }
-
         private async void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { _telloStateText.Text = $"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}"; });
@@ -227,7 +223,10 @@ namespace Tello.Video.UWP
 
         #region tello commands
 
-        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
+        // real tello
+        //private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
+        // emulated tello
+        private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
 
         private ObservableCollection<string> _telloCommandReponse = new ObservableCollection<string>();
 

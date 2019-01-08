@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tello.Emulator.SDKV2
@@ -8,18 +10,18 @@ namespace Tello.Emulator.SDKV2
     {
         public UdpServer(int port)
         {
-            _port = port;
+            _endpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), port);
         }
 
+        private readonly IPEndPoint _endpoint;
         private bool _running = false;
-        private readonly int _port;
 
-        public async void Start()
+        public void Start()
         {
             if (!_running)
             {
                 _running = true;
-                await Task.Run(() => { RunServer(); });
+                RunServer();
             }
         }
 
@@ -28,19 +30,25 @@ namespace Tello.Emulator.SDKV2
             _running = false;
         }
 
-        private void RunServer()
+        private async void RunServer()
         {
-            using (var client = new UdpClient())
+            await Task.Run(async () =>
             {
-                client.Connect(new IPEndPoint(IPAddress.Parse("127.0.0.1"), _port));
-                while (_running)
+                var wait = new SpinWait();
+                using (var client = new UdpClient())
                 {
-                    var datagram = GetDatagram();
-                    client.Send(datagram, datagram.Length);
+                    client.Connect(_endpoint);
+                    while (_running)
+                    {
+                        var datagram = await GetDatagram();
+                        await client.SendAsync(datagram, datagram.Length);
+                        Debug.WriteLine("datagram sent");
+                        wait.SpinOnce();
+                    }
                 }
-            }
+            });
         }
 
-        protected abstract byte[] GetDatagram();
+        protected abstract Task<byte[]> GetDatagram();
     }
 }

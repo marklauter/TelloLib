@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text;
 using System.Threading;
+using Tello.Emulator.SDKV2.Video;
 using Tello.Udp;
 
 namespace Tello.Emulator.SDKV2
@@ -13,7 +14,7 @@ namespace Tello.Emulator.SDKV2
 
     public class Drone
     {
-        public Drone(ILog log)
+        public Drone(ILog log, byte[] videoData, Sample[] sampleDefs)
         {
             _log = log;
 
@@ -22,8 +23,10 @@ namespace Tello.Emulator.SDKV2
 
             _droneState = new DroneState();
             _stateServer = new StateServer(8890, _droneState);
-            _videoServer = new VideoServer(11111);
+            _videoServer = new VideoServer(11111, videoData, sampleDefs);
+
             _commandInterpreter = new CommandInterpreter(_droneState, _videoServer, _stateServer, log);
+
             _batteryTimer = new Timer(UpdateBattery, null, 10000, 10000);
         }
 
@@ -31,6 +34,7 @@ namespace Tello.Emulator.SDKV2
         {
             if (_poweredOn)
             {
+                // documentation says there's ~ 15 minuts of battery
                 _droneState.BatteryPercentage = 100 - (int)((DateTime.Now - _poweredOnTime).TotalMinutes / 15.0 * 100);
                 Log($"battery updated {_droneState.BatteryPercentage}");
                 if (_droneState.BatteryPercentage < 1)

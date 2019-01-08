@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Tello.Emulator.SDKV2
@@ -12,11 +13,13 @@ namespace Tello.Emulator.SDKV2
 
         private readonly DroneState _droneState;
 
-        protected override byte[] GetDatagram()
+        protected async override Task<byte[]> GetDatagram()
         {
             // 5Hz state reporting
-            Task.Delay(200);
-            return Encoding.UTF8.GetBytes(_droneState.ToString());
+            await Task.Delay(200);
+            var state = _droneState.ToString();
+            //Debug.WriteLine(state);
+            return Encoding.UTF8.GetBytes(state);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Tello.Emulator.SDKV2.Video
+namespace Tello.Emulator.SDKV2
 {
     public sealed class Sample
     {

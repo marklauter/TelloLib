@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using System.Text;
+﻿using System.Text;
 using System.Threading.Tasks;
 
 namespace Tello.Emulator.SDKV2
@@ -16,7 +15,6 @@ namespace Tello.Emulator.SDKV2
         protected async override Task<byte[]> GetDatagram()
         {
             // 5Hz state reporting
-            await Task.Delay(200);
             await Task.Delay(200);
             return Encoding.UTF8.GetBytes(_droneState.ToString());
         }

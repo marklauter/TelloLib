@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Tello.Emulator.SDKV2;
-using Tello.Emulator.SDKV2.Video;
 
 namespace Tello.EmulatorConsole
 {

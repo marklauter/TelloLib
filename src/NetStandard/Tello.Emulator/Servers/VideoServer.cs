@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace Tello.Emulator.SDKV2.Video
+namespace Tello.Emulator.SDKV2
 {
     internal sealed class VideoServer : UdpServer
     {
@@ -16,13 +18,14 @@ namespace Tello.Emulator.SDKV2.Video
             _sampleDefs = sampleDefs;
         }
 
-        protected async override Task<byte[]> GetDatagram()
+
+        protected override Task<byte[]> GetDatagram()
         {
             var sampleDef = _sampleDefs[_sampleIndex];
 
             // sleep to simulate Tello's actual sample rate
-            await Task.Delay(sampleDef.TimeIndex - _previousTimeIndex);
-            _previousTimeIndex = sampleDef.TimeIndex;
+            //await Task.Delay(TimeSpan.FromMilliseconds(1));
+            Thread.Sleep(2);
 
             // get the video sample 
             var sample = new byte[sampleDef.Length];
@@ -31,7 +34,7 @@ namespace Tello.Emulator.SDKV2.Video
             // advance the sample index, wrap at the end
             _sampleIndex = (_sampleIndex + 1) % _sampleDefs.Length;
 
-            return sample;
+            return Task.FromResult(sample);
         }
     }
 }

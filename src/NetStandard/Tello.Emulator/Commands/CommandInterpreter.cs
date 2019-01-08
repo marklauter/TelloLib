@@ -1,5 +1,4 @@
 ﻿using System;
-using Tello.Emulator.SDKV2.Video;
 
 namespace Tello.Emulator.SDKV2
 {

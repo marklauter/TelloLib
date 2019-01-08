@@ -50,9 +50,6 @@ namespace Tello.Udp
                     }
 
                     _client = new UdpClient();
-                    //{
-                    //    ExclusiveAddressUse = false
-                    //};
                     _client.Connect(_endPoint);
                 });
                 Connected?.Invoke(this, EventArgs.Empty);

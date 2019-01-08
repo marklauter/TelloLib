@@ -1,11 +1,10 @@
-﻿using System;
+﻿#define USE_EMULATOR
+
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Sockets;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
-using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
@@ -25,10 +24,17 @@ namespace Tello.Video.UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+#if USE_EMULATOR
+        // emulated tello
+        private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
+        private readonly UdpLoopbackReceiver _stateReceiver = new UdpLoopbackReceiver("127.0.0.1", 8890);
+        private readonly VideoFrameLoopbackServer _frameServer = new VideoFrameLoopbackServer(32, TimeSpan.FromMilliseconds(500), "127.0.0.1", 11111);
+#else
         // real tello
         private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
-        // emulated tello
-        //private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
+        private readonly UdpReceiver _stateReceiver = new UdpReceiver(8890);
+        private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, TimeSpan.FromMilliseconds(500), 11111);
+#endif
 
         #region ctor
         public MainPage()
@@ -39,11 +45,9 @@ namespace Tello.Video.UWP
             _tello.ResponseReceived += _tello_ResponseReceived;
 
             _stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
-            _stateReceiver.Start();
             Debug.WriteLine($"state receiver listening on port 8890");
 
             _frameServer.FrameReady += _frameServer_FrameReady;
-            _frameServer.Start();
         }
 
         protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -55,8 +59,6 @@ namespace Tello.Video.UWP
         #endregion
 
         #region video
-        private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, TimeSpan.FromMilliseconds(500), 11111);
-
         private bool _videoInitialized = false;
         private void InitializeVideo()
         {
@@ -138,7 +140,7 @@ namespace Tello.Video.UWP
             Debug.WriteLine("Mss_Starting");
         }
 
-        TimeSpan _mediaPosition = TimeSpan.FromSeconds(0);
+        private TimeSpan _mediaPosition = TimeSpan.FromSeconds(0);
         private readonly TimeSpan _frameTimeout = TimeSpan.FromSeconds(5);
         private Stopwatch _sampleWatch = new Stopwatch();
         private long _sampleRequestCount = 0;
@@ -146,7 +148,9 @@ namespace Tello.Video.UWP
         private async void Mss_SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
         {
             if (!_sampleWatch.IsRunning)
+            {
                 _sampleWatch.Start();
+            }
 
             //Debug.Write("+");
 
@@ -178,7 +182,7 @@ namespace Tello.Video.UWP
             //var stopwatch = Stopwatch.StartNew();
 
             var sample = _frameServer.GetSample(_frameTimeout);
-            if(sample!= null && sample.Count > 0)
+            if (sample != null && sample.Count > 0)
             {
                 //Debug.Write("T");
                 args.Request.Sample = MediaStreamSample.CreateFromBuffer(sample.Content.AsBuffer(), sample.TimeIndex);
@@ -221,9 +225,6 @@ namespace Tello.Video.UWP
         #endregion
 
         #region tello state
-
-        private readonly UdpReceiver _stateReceiver = new UdpReceiver(8890);
-
         private async void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { _telloStateText.Text = $"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}"; });
@@ -256,7 +257,7 @@ namespace Tello.Video.UWP
             });
         }
 
-        private async void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "connecting to tello");
             try
@@ -271,6 +272,9 @@ namespace Tello.Video.UWP
             _telloCommandReponse.Insert(0, "sending 'command' command");
             var request = new Request(Encoding.ASCII.GetBytes("command"), false, false);
             _tello.Send(request);
+
+            _stateReceiver.Start();
+            _frameServer.Start();
         }
 
         private void _takeoffButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)

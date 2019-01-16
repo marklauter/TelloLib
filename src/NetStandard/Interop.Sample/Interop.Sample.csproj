@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Cpp\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Cpp\Output\x64\Debug\InteropSampleCpp.dll" Link="Cpp\InteropSampleCpp.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Cpp\Output\x64\Debug\InteropSampleCpp.exp" Link="Cpp\InteropSampleCpp.exp">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Cpp\Output\x64\Debug\InteropSampleCpp.ilk" Link="Cpp\InteropSampleCpp.ilk">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Cpp\Output\x64\Debug\InteropSampleCpp.lib" Link="Cpp\InteropSampleCpp.lib">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\Cpp\Output\x64\Debug\InteropSampleCpp.pdb" Link="Cpp\InteropSampleCpp.pdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

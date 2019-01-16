@@ -3,8 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Tello.Core;
 using Tello.Udp;
 
@@ -62,11 +60,11 @@ namespace Udp.Sender
                     {
                         break;
                     }
-                    if(message.Key.ToString().ToLower() == "k")
+                    if (message.Key.ToString().ToLower() == "k")
                     {
                         Console.Write("\renter custom command: ");
                         var command = Console.ReadLine();
-                        if (!string.IsNullOrEmpty(command))
+                        if (!String.IsNullOrEmpty(command))
                         {
                             var request = new Request(Encoding.ASCII.GetBytes(command), false, false)
                             {
@@ -233,7 +231,7 @@ namespace Udp.Sender
             //}
             //builder.AppendLine();
             //builder.AppendLine("----------------------");
-            
+
             var sent = Encoding.UTF8.GetString(e.Request.Datagram);
             var received = Encoding.UTF8.GetString(e.Response.Datagram);
             Console.WriteLine($"MESSAGE SENT: {sent}, MESSAGE RECEIVED: {received}");

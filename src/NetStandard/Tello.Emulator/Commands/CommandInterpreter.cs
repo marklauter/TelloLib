@@ -220,17 +220,18 @@ namespace Tello.Emulator.SDKV2
                         return _droneState.BatteryPercentage.ToString();
                     case Commands.GetTime:
                         //todo: see what format the tello returns
-                        if (_flying)
+                        if (_droneState.IsFlying)
                         {
-                            return (DateTime.Now - _takeoffTime).ToString("hh:mm:ss");
+                            return _droneState.TimeOfFlight.ToString();
+                            //return (DateTime.Now - _takeoffTime).ToString("hh:mm:ss");
                         }
-                        return "00:00:00";
+                        return "0";
                     case Commands.GetWiFiSnr:
                         return "snr";
                     case Commands.GetSdkVersion:
-                        return "2.0 emulated";
+                        return "V2.0 (emulated)";
                     case Commands.GetSerialNumber:
-                        return "tello emulator";
+                        return "Tello Emulator V0.1";
                     default:
                         return _error;
                 }

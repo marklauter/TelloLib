@@ -4,12 +4,16 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Tello.Udp
 {
+
     public class UdpTransceiver : IDisposable
     {
-        public UdpTransceiver(string ip, int port) : base()
+        public UdpTransceiver(string ip, int port, TimeSpan timeout) : base()
         {
             if (String.IsNullOrEmpty(ip))
             {
@@ -18,17 +22,19 @@ namespace Tello.Udp
 
             _endPoint = new IPEndPoint(IPAddress.Parse(ip), port);
             Destination = $"{ip}:{port}";
+
+            _timeout = timeout;
         }
 
         private readonly FilterRetryPolicy _connectionRetryPolicy =
             new FilterRetryPolicy(120, TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(1), new Type[] { typeof(NetworkUnavailableException) });
 
         private readonly IPEndPoint _endPoint;
+        private readonly TimeSpan _timeout;
         private UdpClient _client = null;
 
         public event EventHandler Connected;
         public event EventHandler Disconnected;
-        public event EventHandler<ResponseReceivedArgs> ResponseReceived;
         public string Destination { get; }
 
         public async void Connect()
@@ -54,7 +60,7 @@ namespace Tello.Udp
                 });
                 Connected?.Invoke(this, EventArgs.Empty);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 IsConnected = false;
                 Debug.WriteLine(ex);
@@ -80,45 +86,69 @@ namespace Tello.Udp
         public bool IsNetworkAvailable => NetworkInterface.GetIsNetworkAvailable();
         public bool IsConnected { get; private set; }
 
-        private class ReceiverState
+        public class Response
         {
-            internal ReceiverState(UdpClient client, IPEndPoint endPoint, Request request, DateTime sentTime)
+            internal void SetReceiveResult(UdpReceiveResult result)
             {
-                Client = client ?? throw new ArgumentNullException(nameof(client));
-                EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
-                Request = request ?? throw new ArgumentNullException(nameof(request));
+                Datagram = result.Buffer;
+                RemoteEndpoint = result.RemoteEndPoint;
+                IsSuccess = true;
+                Message = "ok";
             }
 
-            internal UdpClient Client { get; }
-            internal IPEndPoint EndPoint { get; }
-            internal DateTime SentTime { get; }
-            internal Request Request { get; }
-        }
+            public byte[] Datagram { get; private set; }
 
-        public async void Send(Request request)
-        {
-            if (_client != null && IsConnected)
+            public string GetMessage()
             {
-                var state = new ReceiverState(_client, _endPoint, request, DateTime.Now);
-                await _client.SendAsync(request.Datagram, request.Datagram.Length);
-                _client.BeginReceive(OnReceive, state);
+                return Encoding.UTF8.GetString(Datagram);
             }
+
+            public IPEndPoint RemoteEndpoint { get; private set; }
+
+            public long ElapsedMS { get; internal set; }
+
+            public bool IsSuccess { get; internal set; } = false;
+
+            /// <summary>
+            /// check message when IsSucess == false
+            /// </summary>
+            public string Message { get; internal set; }
         }
 
-        private void OnReceive(IAsyncResult ar)
+        public Task<Response> SendAsync(byte[] datagram)
         {
-            if (!_isDisposed && IsConnected)
+            return Task.Run(async () =>
             {
-                var state = (ReceiverState)ar.AsyncState;
-                if (state.Client != null && state.Client.Client != null)
+                var response = new Response();
+
+                if (_client == null || !IsConnected)
                 {
-                    var request = state.Request;
-                    var endpoint = new IPEndPoint(IPAddress.Any, 0);
-                    var response = new Response(state.Request.Id, state.Client.EndReceive(ar, ref endpoint));
-
-                    ResponseReceived?.Invoke(this, new ResponseReceivedArgs(endpoint, state.Request, response, state.SentTime));
+                    response.Message = "not connected";
+                    return response;
                 }
-            }
+
+                var spinWait = new SpinWait();
+                var timer = Stopwatch.StartNew();
+
+                await _client.SendAsync(datagram, datagram.Length);
+
+                while (_client.Available == 0 && timer.Elapsed <= _timeout)
+                {
+                    spinWait.SpinOnce();
+                }
+
+                response.ElapsedMS = timer.ElapsedMilliseconds;
+
+                if (_client.Available == 0)
+                {
+                    response.Message = "timed out";
+                    return response;
+                }
+
+                response.SetReceiveResult(await _client.ReceiveAsync());
+
+                return response;
+            });
         }
 
         #region IDisposable Support

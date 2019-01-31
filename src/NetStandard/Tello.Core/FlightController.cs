@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Text;
-using Tello.Udp;
 using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Tello.Udp;
 
 namespace Tello.Core
 {
@@ -13,6 +13,7 @@ namespace Tello.Core
         Connected,
     }
 
+    //todo: finish adding all tello commands
     public class FlightController : IDisposable
     {
         public delegate void ConnectionStageChangingDeligate(ConnectionStates oldState, ConnectionStates newState);
@@ -20,15 +21,13 @@ namespace Tello.Core
 
         public FlightController()
         {
-            _client = new UdpTransceiver(IP, PORT);
-            _client.ResponseReceived += _client_ResponseReceived;
+            _client = new UdpTransceiver(IP, PORT, TimeSpan.FromSeconds(10));
         }
 
         private const string IP = "192.168.10.1";
         private const int PORT = 8889;
 
         private readonly UdpTransceiver _client;
-        private readonly ConcurrentDictionary<Guid, Request> _requests = new ConcurrentDictionary<Guid, Request>();
         private ConnectionStates _connectionState = ConnectionStates.Disconnected;
         public ConnectionStates ConnectionState
         {
@@ -46,17 +45,32 @@ namespace Tello.Core
         /// <summary>
         /// establish connection and command session with tello
         /// </summary>
-        public void Connect()
+        public async Task<bool> ConnectAsync()
         {
-            if (ConnectionState != ConnectionStates.Disconnected)
+            if (ConnectionState == ConnectionStates.Disconnected)
             {
                 ConnectionState = ConnectionStates.Connecting;
                 _client.Connect();
 
-                var request = RequestFactory.GetRequest(Commands.Connect);
-                _requests.TryAdd(request.Id, request);
-                _client.Send(request);
+                var response = await _client.SendAsync(Encoding.UTF8.GetBytes("command"));
+                if (response.IsSuccess)
+                {
+                    var message = response.GetMessage();
+                    if (message == "ok")
+                    {
+                        ConnectionState = ConnectionStates.Connected;
+                    }
+                    else
+                    {
+                        ConnectionState = ConnectionStates.Disconnected;
+                    }
+                }
+                else
+                {
+                    ConnectionState = ConnectionStates.Disconnected;
+                }
             }
+            return ConnectionState == ConnectionStates.Connected;
         }
 
         public void Disconnect()
@@ -65,36 +79,6 @@ namespace Tello.Core
             {
                 ConnectionState = ConnectionStates.Disconnected;
                 _client.Disconnect();
-            }
-        }
-
-        private void _client_ResponseReceived(object sender, ResponseReceivedArgs e)
-        {
-            _requests.TryGetValue(e.Request.Id, out var request);
-            if (!request.Datagram.SequenceEqual(e.Request.Datagram))
-            {
-                throw new Exception("request/response mismatch");
-            }
-
-            var command = (Commands)e.Request.UserData;
-            switch (command)
-            {
-                case Commands.Connect:
-                    if (ConnectionState == ConnectionStates.Connecting)
-                    {
-                        var message = Encoding.UTF8.GetString(e.Response.Datagram);
-                        if (message.StartsWith("conn_ack"))
-                        {
-                            ConnectionState = ConnectionStates.Connected;
-                        }
-                    }
-                    break;
-                case Commands.TakeOff:
-                    break;
-                case Commands.Land:
-                    break;
-                default:
-                    break;
             }
         }
 

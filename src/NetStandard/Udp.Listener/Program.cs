@@ -26,7 +26,7 @@ namespace Udp.Listener
 
         private static void Listen2()
         {
-            var stateReceiver = new UdpReceiver(8890);
+            var stateReceiver = new UdpListener(8890);
             stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
             stateReceiver.Start();
             try

@@ -8,7 +8,7 @@ namespace Tello.Video
         //public VideoFrameServer(double frameRate, int bitRate, TimeSpan bufferTime, int bytesPerSample = 1460, int port = 11111)
         public VideoFrameServer(double frameRate, TimeSpan bufferTime, int port = 11111)
         {
-            _udpReceiver = new UdpReceiver(port);
+            _udpReceiver = new UdpListener(port);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             //_frameComposer = new FrameComposer(frameRate, bitRate, bufferTime, bytesPerSample);
@@ -20,7 +20,7 @@ namespace Tello.Video
         //private readonly FrameComposer _frameComposer;
         private readonly FrameComposer2 _frameComposer;
         //private readonly FrameComposer3 _frameComposer;
-        private readonly UdpReceiver _udpReceiver;
+        private readonly UdpListener _udpReceiver;
 
         public event EventHandler<FrameReadyArgs> FrameReady;
 

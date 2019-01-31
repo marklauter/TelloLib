@@ -18,7 +18,7 @@ namespace Tello.Emulator.SDKV2
         {
             _log = log;
 
-            _udpReceiver = new Udp.UdpReceiver(8889);
+            _udpReceiver = new Udp.UdpListener(8889);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             _droneState = new DroneState();
@@ -49,7 +49,7 @@ namespace Tello.Emulator.SDKV2
         private readonly Timer _batteryTimer;
         private bool _poweredOn = false;
         private DateTime _poweredOnTime;
-        private readonly Udp.UdpReceiver _udpReceiver;
+        private readonly Udp.UdpListener _udpReceiver;
         private readonly DroneState _droneState;
         private readonly VideoServer _videoServer;
         private readonly StateServer _stateServer;

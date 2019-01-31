@@ -1,15 +1,17 @@
-﻿#define USE_EMULATOR
+﻿#define __USE_EMULATOR
 
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Threading.Tasks;
 using Tello.Udp;
 using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
+using static Tello.Udp.UdpTransceiver;
 
 
 //https://docs.microsoft.com/en-us/windows/uwp/audio-video-camera/process-media-frames-with-mediaframereader
@@ -24,6 +26,7 @@ namespace Tello.Video.UWP
     /// </summary>
     public sealed partial class MainPage : Page
     {
+        #region tello or emulator 
 #if USE_EMULATOR
         // emulated tello
         private readonly UdpTransceiver _tello = new UdpTransceiver("127.0.0.1", 8889);
@@ -31,10 +34,11 @@ namespace Tello.Video.UWP
         private readonly VideoFrameLoopbackServer _frameServer = new VideoFrameLoopbackServer(32, TimeSpan.FromSeconds(1), "127.0.0.1", 11111);
 #else
         // real tello
-        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889);
-        private readonly UdpReceiver _stateReceiver = new UdpReceiver(8890);
+        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889, TimeSpan.FromSeconds(60));
+        private readonly UdpListener _stateReceiver = new UdpListener(8890);
         private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, TimeSpan.FromMilliseconds(500), 11111);
 #endif
+        #endregion
 
         #region ctor
         public MainPage()
@@ -42,7 +46,6 @@ namespace Tello.Video.UWP
             InitializeComponent();
 
             _commandResponseListView.ItemsSource = _telloCommandReponse;
-            _tello.ResponseReceived += _tello_ResponseReceived;
 
             _stateReceiver.DatagramReceived += StateReceiver_DatagramReceived;
             Debug.WriteLine($"state receiver listening on port 8890");
@@ -235,26 +238,38 @@ namespace Tello.Video.UWP
 
         private ObservableCollection<string> _telloCommandReponse = new ObservableCollection<string>();
 
-        private const int _startVideo = 999;
-        private const int _stopVideo = 1000;
         private bool _receivingVideo = false;
 
-        private async void _tello_ResponseReceived(object sender, ResponseReceivedArgs e)
+        private void ShowMessage(string message)
         {
-            var message = Encoding.UTF8.GetString(e.Response.Datagram);
-            await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
-            {
-                if (e.Request.UserData == _startVideo && message.ToLower() == "ok")
-                {
-                    _receivingVideo = true;
-                }
-                if (e.Request.UserData == _stopVideo && message.ToLower() == "ok")
-                {
-                    _receivingVideo = false;
-                    _mediaElement.Stop();
-                }
+            //await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.High, () =>
+            //{
                 _telloCommandReponse.Insert(0, message);
-            });
+            //});
+        }
+
+        private async void SendMessage(string message, Action<Response> onSuccess = null)
+        {
+            ShowMessage($"sending: {message}");
+
+            var response = await _tello.SendAsync(Encoding.ASCII.GetBytes(message));
+            if (response.IsSuccess)
+            {
+                var responseMessage = response.GetMessage().ToLowerInvariant();
+                if (responseMessage == "ok")
+                {
+                    ShowMessage($"success: {message} in {response.ElapsedMS}ms, {responseMessage}");
+                    onSuccess?.Invoke(response);
+                }
+                else
+                {
+                    ShowMessage($"fail: {message} returned message {responseMessage}");
+                }
+            }
+            else
+            {
+                ShowMessage($"fail: {message} with message {response.Message}");
+            }
         }
 
         private void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
@@ -269,56 +284,59 @@ namespace Tello.Video.UWP
                 _telloCommandReponse.Insert(0, ex.ToString());
             }
 
-            _telloCommandReponse.Insert(0, "sending 'command' command");
-            var request = new Request(Encoding.ASCII.GetBytes("command"), false, false);
-            _tello.Send(request);
-
-            _stateReceiver.Start();
-            _frameServer.Start();
+            SendMessage("command", (response) =>
+            {
+                _stateReceiver.Start();
+                _frameServer.Start();
+            });
         }
 
         private void _takeoffButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            _telloCommandReponse.Insert(0, "sending 'takeoff' command");
-            var request = new Request(Encoding.ASCII.GetBytes("takeoff"), false, false);
-            _tello.Send(request);
+            SendMessage("takeoff");
         }
 
         private void _landButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            _telloCommandReponse.Insert(0, "sending 'land' command");
-            var request = new Request(Encoding.ASCII.GetBytes("land"), false, false);
-            _tello.Send(request);
+            SendMessage("land");
+        }
+
+        private void _goButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        {
+            SendMessage("takeoff");
+            SendMessage("forward 100");
+            SendMessage("left 100");
+            SendMessage("back 100");
+            SendMessage("right 100");
+            SendMessage("time?");
+            SendMessage("land");
         }
 
         private void _startVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "sending 'streamon' (start video) command");
-            var request = new Request(Encoding.ASCII.GetBytes("streamon"), false, false)
+            SendMessage("streamon", (response) =>
             {
-                UserData = _startVideo
-            };
-            _tello.Send(request);
+                _receivingVideo = true;
+            });
         }
 
         private void _stopVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _mediaElement.Stop();
-
-            _telloCommandReponse.Insert(0, "sending 'streamon' (stop video) command");
-            var request = new Request(Encoding.ASCII.GetBytes("streamoff"), false, false)
+            _telloCommandReponse.Insert(0, "sending 'streamoff' (stop video) command");
+            SendMessage("streamoff", (response) =>
             {
-                UserData = _stopVideo
-            };
-            _tello.Send(request);
+                _receivingVideo = false;
+                _mediaElement.Stop();
+            });
         }
 
         private void _checkBatteryButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            _telloCommandReponse.Insert(0, "sending 'battery?' command");
-            var request = new Request(Encoding.ASCII.GetBytes("battery?"), false, false);
-            _tello.Send(request);
+            SendMessage("battery?");
         }
         #endregion
+
     }
 }

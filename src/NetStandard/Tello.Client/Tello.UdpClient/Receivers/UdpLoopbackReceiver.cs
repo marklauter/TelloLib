@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Tello.Udp
 {
     // establishes connection with UdpLoopbackServer and 
-    public class UdpLoopbackReceiver : IUdpReceiver, IDisposable
+    public class UdpLoopbackReceiver : IUdpListener, IDisposable
     {
         public UdpLoopbackReceiver(string host, int port) : base()
         {

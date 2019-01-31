@@ -2,7 +2,7 @@
 
 namespace Tello.Udp
 {
-    public interface IUdpReceiver
+    public interface IUdpListener
     {
         int Port { get; }
         bool IsActive { get; }

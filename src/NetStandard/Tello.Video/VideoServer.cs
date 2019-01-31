@@ -19,7 +19,7 @@ namespace Tello.Video
     {
         public VideoServer(int port = 11111, int bufferSize = 1204)
         {
-            _udpReceiver = new UdpReceiver(port);
+            _udpReceiver = new UdpListener(port);
             _udpReceiver.DatagramReceived += _udpReceiver_DatagramReceived;
 
             if (bufferSize <= 0)
@@ -31,7 +31,7 @@ namespace Tello.Video
 
         #region fields
         public event EventHandler<SampleReadyArgs> SampleReady;
-        private readonly UdpReceiver _udpReceiver;
+        private readonly UdpListener _udpReceiver;
         private readonly RingBuffer<byte[]> _samples;
         #endregion
 

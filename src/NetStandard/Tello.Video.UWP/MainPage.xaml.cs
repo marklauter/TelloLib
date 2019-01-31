@@ -34,7 +34,7 @@ namespace Tello.Video.UWP
         private readonly VideoFrameLoopbackServer _frameServer = new VideoFrameLoopbackServer(32, TimeSpan.FromSeconds(1), "127.0.0.1", 11111);
 #else
         // real tello
-        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889, TimeSpan.FromSeconds(60));
+        private readonly UdpTransceiver _tello = new UdpTransceiver("192.168.10.1", 8889, TimeSpan.FromSeconds(15));
         private readonly UdpListener _stateReceiver = new UdpListener(8890);
         private readonly VideoFrameServer _frameServer = new VideoFrameServer(32, TimeSpan.FromMilliseconds(500), 11111);
 #endif
@@ -248,14 +248,14 @@ namespace Tello.Video.UWP
             //});
         }
 
-        private async void SendMessage(string message, Action<Response> onSuccess = null)
+        private async Task SendMessageAsync(string message, Action<Response> onSuccess = null)
         {
             ShowMessage($"sending: {message}");
 
             var response = await _tello.SendAsync(Encoding.ASCII.GetBytes(message));
             if (response.IsSuccess)
             {
-                var responseMessage = response.GetMessage().ToLowerInvariant();
+                var responseMessage = response.GetString().ToLowerInvariant();
                 if (responseMessage == "ok")
                 {
                     ShowMessage($"success: {message} in {response.ElapsedMS}ms, {responseMessage}");
@@ -272,7 +272,7 @@ namespace Tello.Video.UWP
             }
         }
 
-        private void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _connectButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "connecting to tello");
             try
@@ -284,57 +284,60 @@ namespace Tello.Video.UWP
                 _telloCommandReponse.Insert(0, ex.ToString());
             }
 
-            SendMessage("command", (response) =>
+            await SendMessageAsync("command", (response) =>
             {
                 _stateReceiver.Start();
                 _frameServer.Start();
             });
         }
 
-        private void _takeoffButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _takeoffButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            SendMessage("takeoff");
+            await SendMessageAsync("takeoff");
         }
 
-        private void _landButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _landButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            SendMessage("land");
+            await SendMessageAsync("land");
         }
 
-        private void _goButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _goButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            SendMessage("takeoff");
-            SendMessage("forward 100");
-            SendMessage("left 100");
-            SendMessage("back 100");
-            SendMessage("right 100");
-            SendMessage("time?");
-            SendMessage("land");
+            var sides = 3;
+            var angle = 360 / sides;
+            await SendMessageAsync("speed 100");
+            await SendMessageAsync("takeoff");
+            for (var i = 0; i < sides; ++i)
+            {
+                await SendMessageAsync("forward 50");
+                await SendMessageAsync($"ccw {angle}");
+            }
+            await SendMessageAsync("land");
         }
 
-        private void _startVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _startVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _telloCommandReponse.Insert(0, "sending 'streamon' (start video) command");
-            SendMessage("streamon", (response) =>
+            await SendMessageAsync("streamon", (response) =>
             {
                 _receivingVideo = true;
             });
         }
 
-        private void _stopVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _stopVideoButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
             _mediaElement.Stop();
             _telloCommandReponse.Insert(0, "sending 'streamoff' (stop video) command");
-            SendMessage("streamoff", (response) =>
+            await SendMessageAsync("streamoff", (response) =>
             {
                 _receivingVideo = false;
                 _mediaElement.Stop();
             });
         }
 
-        private void _checkBatteryButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
+        private async void _checkBatteryButton_Click(object sender, Windows.UI.Xaml.RoutedEventArgs e)
         {
-            SendMessage("battery?");
+            await SendMessageAsync("battery?");
         }
         #endregion
 

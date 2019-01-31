@@ -55,7 +55,8 @@ namespace Tello.Core
                 var response = await _client.SendAsync(Encoding.UTF8.GetBytes("command"));
                 if (response.IsSuccess)
                 {
-                    var message = response.GetMessage();
+                    //todo: handle failure better  - maybe throw exception if response has excepted
+                    var message = response.GetString();
                     if (message == "ok")
                     {
                         ConnectionState = ConnectionStates.Connected;

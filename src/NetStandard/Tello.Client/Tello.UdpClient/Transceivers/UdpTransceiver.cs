@@ -98,7 +98,7 @@ namespace Tello.Udp
 
             public byte[] Datagram { get; private set; }
 
-            public string GetMessage()
+            public string GetString()
             {
                 return Encoding.UTF8.GetString(Datagram);
             }
@@ -113,6 +113,7 @@ namespace Tello.Udp
             /// check message when IsSucess == false
             /// </summary>
             public string Message { get; internal set; }
+            public Exception Exception { get; internal set; }
         }
 
         public Task<Response> SendAsync(byte[] datagram)
@@ -121,32 +122,39 @@ namespace Tello.Udp
             {
                 var response = new Response();
 
-                if (_client == null || !IsConnected)
+                try
                 {
-                    response.Message = "not connected";
-                    return response;
+                    if (_client == null || !IsConnected)
+                    {
+                        response.Message = "not connected";
+                        return response;
+                    }
+
+                    var spinWait = new SpinWait();
+                    var timer = Stopwatch.StartNew();
+
+                    await _client.SendAsync(datagram, datagram.Length);
+
+                    while (_client.Available == 0 && timer.Elapsed <= _timeout)
+                    {
+                        spinWait.SpinOnce();
+                    }
+
+                    response.ElapsedMS = timer.ElapsedMilliseconds;
+
+                    if (_client.Available == 0)
+                    {
+                        response.Message = "timed out";
+                        return response;
+                    }
+
+                    response.SetReceiveResult(await _client.ReceiveAsync());
                 }
-
-                var spinWait = new SpinWait();
-                var timer = Stopwatch.StartNew();
-
-                await _client.SendAsync(datagram, datagram.Length);
-
-                while (_client.Available == 0 && timer.Elapsed <= _timeout)
+                catch(Exception ex)
                 {
-                    spinWait.SpinOnce();
+                    response.Exception = ex;
+                    response.Message = $"{ex.GetType().Name} - {ex.Message}";
                 }
-
-                response.ElapsedMS = timer.ElapsedMilliseconds;
-
-                if (_client.Available == 0)
-                {
-                    response.Message = "timed out";
-                    return response;
-                }
-
-                response.SetReceiveResult(await _client.ReceiveAsync());
-
                 return response;
             });
         }

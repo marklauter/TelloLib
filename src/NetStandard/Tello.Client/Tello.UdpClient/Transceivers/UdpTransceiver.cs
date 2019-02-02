@@ -39,32 +39,30 @@ namespace Tello.Udp
 
         public async void Connect()
         {
-            if (IsConnected)
+            if (!IsConnected)
             {
-                return;
-            }
-
-            IsConnected = true;
-            try
-            {
-                await WithRetry.InvokeAsync(_connectionRetryPolicy, () =>
+                IsConnected = true;
+                try
                 {
-                    if (!IsNetworkAvailable)
+                    await WithRetry.InvokeAsync(_connectionRetryPolicy, () =>
                     {
-                        Debug.WriteLine("NetworkUnavailableException");
-                        throw new NetworkUnavailableException();
-                    }
+                        if (!IsNetworkAvailable)
+                        {
+                            Debug.WriteLine("NetworkUnavailableException");
+                            throw new NetworkUnavailableException();
+                        }
 
-                    _client = new UdpClient();
-                    _client.Connect(_endPoint);
-                });
-                Connected?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
-            {
-                IsConnected = false;
-                Debug.WriteLine(ex);
-                throw;
+                        _client = new UdpClient();
+                        _client.Connect(_endPoint);
+                    });
+                    Connected?.Invoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    IsConnected = false;
+                    Debug.WriteLine(ex);
+                    throw;
+                }
             }
         }
 

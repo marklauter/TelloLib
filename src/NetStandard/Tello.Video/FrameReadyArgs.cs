@@ -2,7 +2,7 @@
 
 namespace Tello.Video
 {
-    public class FrameReadyArgs
+    public class FrameReadyArgs : EventArgs
     {
         public FrameReadyArgs(VideoFrame frame)
         {

@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace Tello.Video
 {
-    internal sealed class Gate
+    public sealed class Gate
     {
         private readonly ReaderWriterLockSlim _lock = new ReaderWriterLockSlim();
 
@@ -65,6 +65,19 @@ namespace Tello.Video
             try
             {
                 action.Invoke();
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        public T WithWriteLock<T>(Func<T> func)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                return func.Invoke();
             }
             finally
             {

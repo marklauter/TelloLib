@@ -230,6 +230,7 @@ namespace Tello.Video.UWP
         #region tello state
         private async void StateReceiver_DatagramReceived(object sender, DatagramReceivedArgs e)
         {
+            Debug.WriteLine($"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}");
             await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () => { _telloStateText.Text = $"TELLO STATE: {Encoding.UTF8.GetString(e.Datagram)}"; });
         }
         #endregion

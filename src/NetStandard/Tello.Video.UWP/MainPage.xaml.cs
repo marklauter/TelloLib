@@ -1,4 +1,4 @@
-﻿#define __USE_EMULATOR
+﻿#define DONT_USE_EMULATOR
 
 using System;
 using System.Collections.ObjectModel;

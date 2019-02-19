@@ -1,3 +1,8 @@
+# This Fork is Abandoned
+
+I've dumped this fork in favor of the 2.0 version of the text based SDK. It's better for my experimental project. Some of the work in this repo has been moved and improved here: https://github.com/marklauter/TelloAPI-SDK-2.0
+
+
 # TelloLib 
 A Work-In-Progress cross platform Ryze/DJI Tello control library. Currently supports Android and PC.
 
